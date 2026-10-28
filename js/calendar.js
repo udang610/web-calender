@@ -274,9 +274,6 @@ class CalendarEngine {
       </div>
       ${eventsHtml}
       ${plansHtml}
-      <button type="button" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 14px; padding: 10px; font-weight: 700;" onclick="window.calendeyOpenNewPlanOnDate('${selectedDate}', ${eventsOnDay[0]?.id || 'null'})">
-        <i class="ph-bold ph-plus-circle"></i> Buat Konten di Tanggal Ini
-      </button>
     `;
   }
 
