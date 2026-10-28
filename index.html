@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Calendey — Kalender Nasional & Content Planner Indonesia</title>
+  <meta name="description" content="Website kalender hari nasional Indonesia yang mengintegrasikan alur kerja rencana konten sosial media dan pengingat otomatis via WhatsApp.">
+  <meta name="theme-color" content="#e11d48">
+
+  <!-- PWA Manifest & App Icons -->
+  <link rel="icon" type="image/svg+xml" href="images/icons/favicon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="images/icons/icon-192.png">
+
+  <!-- Modern Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Phosphor Icons (Bold & Fill) -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Calendey Modular Stylesheets -->
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/calendar.css">
+  <link rel="stylesheet" href="css/planner.css">
+</head>
+<body>
+
+  <!-- 1. FULLSCREEN AUTH SCREEN (Login Sederhana & Bersih) -->
+  <div class="auth-screen" id="authScreen" style="display: flex;">
+    <div class="auth-card">
+      <div class="auth-brand-badge">
+        <div class="auth-brand-logo" style="background: transparent; box-shadow: none;">
+          <img src="images/icons/logo.svg" alt="Calendey Logo" style="width: 44px; height: 44px; display: block; margin: 0 auto;">
+        </div>
+        <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em; margin-top: 4px;">Calendey</h2>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">Satu kalender, sejuta makna, satu rencana konten.</p>
+      </div>
+
+      <!-- Form Login Sederhana (Tanpa Tab & Tanpa Masuk Cepat) -->
+      <form id="authScreenLoginForm" style="display: flex; flex-direction: column; gap: 14px; margin-top: 6px;">
+        <div class="form-group">
+          <label class="form-label">Username atau Email</label>
+          <input type="text" id="authScreenLoginEmail" class="form-input" style="padding-left: 14px;" placeholder="Superadmin / dhafin" value="Superadmin" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="authScreenLoginPass" class="form-input" style="padding-left: 14px;" placeholder="••••••••" value="admin-calender" required>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 11px; margin-top: 4px;">
+          <i class="ph-bold ph-sign-in"></i> Masuk Sekarang
+        </button>
+
+        <div style="margin-top: 10px; padding: 10px 12px; background: var(--bg-subtle); border-radius: var(--radius-sm); font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; border: 1px solid var(--surface-border);">
+          <div style="font-weight: 700; color: var(--text); margin-bottom: 2px;">Akun Tersedia:</div>
+          <div>• <strong>Admin:</strong> <code>Superadmin</code> / <code>admin-calender</code></div>
+          <div>• <strong>User:</strong> <code>dhafin</code> / <code>dhafin12345</code></div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. MAIN APP SHELL (Hanya Muncul Setelah Login) -->
+  <div class="app-container" id="appContainer" style="display: none;">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="mainSidebar">
+      <div class="brand-wrapper">
+        <div class="brand-logo" style="background: transparent; box-shadow: none; padding: 0;">
+          <img src="images/icons/logo.svg" alt="Calendey Logo" style="width: 32px; height: 32px; display: block;">
+        </div>
+        <div class="brand-info">
+          <h1>Calendey</h1>
+          <span>Content Planner</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button type="button" class="nav-item active" data-view="calendar">
+          <i class="ph-bold ph-calendar-blank"></i>
+          <span>Kalender Nasional</span>
+        </button>
+
+        <button type="button" class="nav-item" data-view="planner">
+          <i class="ph-bold ph-article"></i>
+          <span>Konten Saya</span>
+          <span class="nav-badge" id="sidebarPlansBadge">1</span>
+        </button>
+
+        <button type="button" class="nav-item" data-view="categories">
+          <i class="ph-bold ph-bookmarks"></i>
+          <span>Kategori Hari</span>
+        </button>
+
+        <button type="button" class="nav-item" data-view="settings">
+          <i class="ph-bold ph-sliders"></i>
+          <span>Pengaturan & WA</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Footer (Polos Bersih) -->
+      <div class="sidebar-footer" style="padding: 16px 8px; border-top: 1px solid var(--surface-border); text-align: center;">
+        <span style="font-size: 0.72rem; color: var(--text-subtle); font-weight: 600;">Calendey • 2026</span>
+      </div>
+    </aside>
+
+    <!-- Main Content Shell -->
+    <main class="main-wrapper">
+      <!-- Topbar Header (Tinggi Lebih Lega) -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" class="menu-toggle" id="menuToggle" aria-label="Toggle Sidebar">
+            <i class="ph-bold ph-list"></i>
+          </button>
+          <div class="page-title-box">
+            <h2 id="topbarPageTitle">Kalender Nasional</h2>
+            <p id="topbarPageSubtitle">Jadwal hari besar nasional Indonesia & agenda konten</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Tombol Masuk/Daftar (Muncul jika belum login) -->
+          <button type="button" class="btn-primary" id="navbarLoginBtn" style="display: none; padding: 7px 16px; font-size: 0.84rem;">
+            <i class="ph-bold ph-sign-in"></i>
+            <span>Masuk / Daftar</span>
+          </button>
+
+          <!-- User Profile di Pojok Kanan Navbar (Hanya Menampilkan Full Name & Caret Arrow) -->
+          <div class="navbar-profile-dropdown" id="navbarProfileDropdown">
+            <button type="button" class="navbar-profile-btn" id="navbarUserBtn" title="Menu Pengguna & Pengaturan" style="gap: 6px; padding: 6px 12px; border-radius: var(--radius-md);">
+              <span class="navbar-user-name" id="navbarUserName" style="font-size: 0.88rem; font-weight: 700; color: var(--text);">Superadmin</span>
+              <i class="ph-bold ph-caret-down navbar-user-caret"></i>
+            </button>
+
+            <!-- Dropdown Menu Pengguna -->
+            <div class="profile-dropdown-menu" id="profileDropdownMenu">
+              <div class="profile-menu-header">
+                <div class="menu-header-name" id="menuHeaderName">Dhafin Shabir</div>
+                <div class="menu-header-badge">
+                  <i class="ph-bold ph-whatsapp-logo"></i>
+                  <span id="menuHeaderWA">+6281234567890</span>
+                </div>
+              </div>
+
+              <!-- Pilihan Tema di Dalam Profil -->
+              <div class="profile-menu-theme-box">
+                <div class="profile-theme-title">
+                  <i class="ph-bold ph-palette"></i> Pilihan Tema
+                </div>
+                <div class="profile-theme-buttons">
+                  <button type="button" class="profile-theme-btn active" data-set-theme="light">
+                    <i class="ph-bold ph-sun"></i> Light
+                  </button>
+                  <button type="button" class="profile-theme-btn" data-set-theme="dark">
+                    <i class="ph-bold ph-moon"></i> Dark
+                  </button>
+                  <button type="button" class="profile-theme-btn" data-set-theme="pink">
+                    <i class="ph-bold ph-heart"></i> Pink
+                  </button>
+                </div>
+              </div>
+
+              <div class="profile-menu-divider"></div>
+
+              <button type="button" class="profile-menu-item" id="btnMenuEditProfile">
+                <i class="ph-bold ph-user-gear"></i>
+                <span>Pengaturan Profil & WhatsApp</span>
+              </button>
+
+              <button type="button" class="profile-menu-item" id="btnMenuAdminPanel">
+                <i class="ph-bold ph-users-three"></i>
+                <span>Panel Admin (Kelola Akun)</span>
+              </button>
+
+              <div class="profile-menu-divider"></div>
+
+              <button type="button" class="profile-menu-item" id="btnMenuLogout" style="color: var(--danger);">
+                <i class="ph-bold ph-sign-out" style="color: var(--danger);"></i>
+                <span>Keluar Akun</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Views Area -->
+      <div class="content-area">
+        <!-- VIEW 1: KALENDER NASIONAL -->
+        <section id="view-calendar">
+          <div class="calendar-layout">
+            <!-- Left: Calendar Matrix -->
+            <div class="calendar-card">
+              <div class="calendar-header">
+                <div class="calendar-month-nav">
+                  <button type="button" class="nav-arrow-btn" id="btnPrevMonth" title="Bulan Sebelumnya">
+                    <i class="ph-bold ph-caret-left"></i>
+                  </button>
+                  <h3 class="current-month-label" id="currentMonthLabel">Oktober 2026</h3>
+                  <button type="button" class="nav-arrow-btn" id="btnNextMonth" title="Bulan Berikutnya">
+                    <i class="ph-bold ph-caret-right"></i>
+                  </button>
+                </div>
+                <button type="button" class="today-shortcut-btn" id="btnTodayShortcut">
+                  <i class="ph-bold ph-clock-counter-clockwise"></i> Hari Ini
+                </button>
+              </div>
+
+              <!-- Category Filter Chips -->
+              <div class="category-filter-bar">
+                <button type="button" class="filter-chip active" data-category="all">Semua Kategori</button>
+                <button type="button" class="filter-chip" data-category="1">
+                  <span class="filter-dot" style="background: var(--cat-nasional)"></span> Hari Nasional
+                </button>
+                <button type="button" class="filter-chip" data-category="2">
+                  <span class="filter-dot" style="background: var(--cat-sejarah)"></span> Hari Bersejarah
+                </button>
+                <button type="button" class="filter-chip" data-category="3">
+                  <span class="filter-dot" style="background: var(--cat-agama)"></span> Hari Keagamaan
+                </button>
+                <button type="button" class="filter-chip" data-category="4">
+                  <span class="filter-dot" style="background: var(--cat-juang)"></span> Hari Perjuangan
+                </button>
+                <button type="button" class="filter-chip" data-category="5">
+                  <span class="filter-dot" style="background: var(--cat-khusus)"></span> Peringatan Khusus
+                </button>
+              </div>
+
+              <!-- Day Names Header -->
+              <div class="calendar-weekdays">
+                <div>Min</div>
+                <div>Sen</div>
+                <div>Sel</div>
+                <div>Rab</div>
+                <div>Kam</div>
+                <div>Jum</div>
+                <div>Sab</div>
+              </div>
+
+              <!-- 42 Day Cells Grid -->
+              <div class="calendar-grid" id="calendarGrid">
+                <!-- Dynamically Rendered by calendar.js -->
+              </div>
+            </div>
+
+            <!-- Right: Details & Upcoming Panel -->
+            <aside class="calendar-side-panel">
+              <!-- Selected Date Details -->
+              <div class="detail-card" id="selectedDayDetail">
+                <!-- Dynamically Rendered by calendar.js -->
+              </div>
+
+              <!-- Upcoming National Days Widget -->
+              <div class="detail-card">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                  <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text);">Hari Nasional Mendatang</h4>
+                  <i class="ph-bold ph-hourglass-medium" style="color: var(--text-muted)"></i>
+                </div>
+                <div class="upcoming-list" id="upcomingDaysList">
+                  <!-- Dynamically Rendered by calendar.js -->
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- VIEW 2: KONTEN SAYA (PLANNER) -->
+        <section id="view-planner" style="display: none;">
+          <div id="plannerViewContainer">
+            <!-- Dynamically Rendered by planner.js -->
+          </div>
+        </section>
+
+        <!-- VIEW 3: KATEGORI & MASTER LIST -->
+        <section id="view-categories" style="display: none;">
+          <!-- Dynamically Rendered by views.js -->
+        </section>
+
+        <!-- VIEW 4: PENGATURAN & REMINDER WA -->
+        <section id="view-settings" style="display: none;">
+          <!-- Dynamically Rendered by views.js -->
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Global Modal Overlay -->
+  <div class="modal-overlay" id="globalModalOverlay"></div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- App Bootstrap Module -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

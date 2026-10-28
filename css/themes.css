@@ -1,0 +1,144 @@
+/* ==========================================================================
+   CALENDEY — Theme Design Tokens
+   Mendukung 3 Tema: Light, Dark, dan Soft Pink via [data-theme]
+   ========================================================================== */
+
+:root,
+html[data-theme="light"] {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* Canvas & Surfaces */
+  --bg: #f8fafc;
+  --bg-subtle: #f1f5f9;
+  --surface: #ffffff;
+  --surface-hover: #f8fafc;
+  --surface-active: #f1f5f9;
+  --surface-border: #e2e8f0;
+  --border-light: #edf2f7;
+
+  /* Typography Colors */
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+  --text-inverse: #ffffff;
+
+  /* Brand Accents */
+  --primary: #e11d48;
+  --primary-hover: #be123c;
+  --primary-subtle: #ffe4e6;
+  --primary-glow: rgba(225, 29, 72, 0.18);
+
+  /* Functional Colors */
+  --success: #10b981;
+  --success-subtle: #d1fae5;
+  --warning: #f59e0b;
+  --warning-subtle: #fef3c7;
+  --info: #0284c7;
+  --info-subtle: #e0f2fe;
+  --danger: #ef4444;
+  --danger-subtle: #fee2e2;
+
+  /* National Day Categories */
+  --cat-nasional: #ef4444;
+  --cat-sejarah: #f97316;
+  --cat-agama: #10b981;
+  --cat-juang: #3b82f6;
+  --cat-khusus: #8b5cf6;
+
+  /* Shadows & Glassmorphism */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.1), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-blur: blur(12px);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+}
+
+html[data-theme="dark"] {
+  --bg: #090d16;
+  --bg-subtle: #0f172a;
+  --surface: #131b2e;
+  --surface-hover: #1e293b;
+  --surface-active: #24324d;
+  --surface-border: #1e293b;
+  --border-light: #182236;
+
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --text-inverse: #090d16;
+
+  --primary: #f43f5e;
+  --primary-hover: #fb7185;
+  --primary-subtle: rgba(244, 63, 94, 0.15);
+  --primary-glow: rgba(244, 63, 94, 0.35);
+
+  --success: #34d399;
+  --success-subtle: rgba(52, 211, 153, 0.15);
+  --warning: #fbbf24;
+  --warning-subtle: rgba(251, 191, 36, 0.15);
+  --info: #38bdf8;
+  --info-subtle: rgba(56, 189, 248, 0.15);
+  --danger: #f87171;
+  --danger-subtle: rgba(248, 113, 113, 0.15);
+
+  --cat-nasional: #f87171;
+  --cat-sejarah: #fb923c;
+  --cat-agama: #34d399;
+  --cat-juang: #60a5fa;
+  --cat-khusus: #a78bfa;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 16px -2px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 32px -4px rgba(0, 0, 0, 0.6);
+  --glass-bg: rgba(19, 27, 46, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="pink"] {
+  --bg: #fff5f7;
+  --bg-subtle: #ffeef2;
+  --surface: #ffffff;
+  --surface-hover: #fff1f4;
+  --surface-active: #ffe4e9;
+  --surface-border: #ffd1dc;
+  --border-light: #ffe5ec;
+
+  --text: #4a1d24;
+  --text-muted: #8c535d;
+  --text-subtle: #b3828c;
+  --text-inverse: #ffffff;
+
+  --primary: #fb7185;
+  --primary-hover: #f43f5e;
+  --primary-subtle: #ffe4e9;
+  --primary-glow: rgba(251, 113, 133, 0.25);
+
+  --success: #10b981;
+  --success-subtle: #d1fae5;
+  --warning: #f59e0b;
+  --warning-subtle: #fef3c7;
+  --info: #0284c7;
+  --info-subtle: #e0f2fe;
+  --danger: #f43f5e;
+  --danger-subtle: #ffe4e9;
+
+  --cat-nasional: #fb7185;
+  --cat-sejarah: #f97316;
+  --cat-agama: #10b981;
+  --cat-juang: #3b82f6;
+  --cat-khusus: #c084fc;
+
+  --shadow-sm: 0 1px 3px rgba(180, 50, 75, 0.06);
+  --shadow-md: 0 4px 14px -2px rgba(180, 50, 75, 0.1);
+  --shadow-lg: 0 12px 28px -4px rgba(180, 50, 75, 0.14);
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(255, 209, 220, 0.6);
+}
