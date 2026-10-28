@@ -11,13 +11,13 @@ if (localStorage.getItem('calendey_supabase_url')?.includes('onikjvzk')) {
 
 export const CONFIG = {
   APP_NAME: 'Calendey',
-  APP_VERSION: '1.0.3',
+  APP_VERSION: '1.1.0',
   DEFAULT_THEME: 'light',
   TIMEZONE: 'Asia/Jakarta',
 
-  // Supabase Credentials — Aktif Terhubung ke Supabase web-calender (udang610)
-  SUPABASE_URL: 'https://oyaacvgankdwmbavfoqh.supabase.co',
-  SUPABASE_ANON_KEY: 'sb_publishable_gXGHTsHz7Jb2uhTPDqBslw__XV0UZ7w',
+  // Supabase Credentials — Aman & Dinamis (diisi dari /api/config di Vercel atau window.CALENDEY_ENV di lokal)
+  SUPABASE_URL: window.CALENDEY_ENV?.SUPABASE_URL || localStorage.getItem('calendey_supabase_url') || '',
+  SUPABASE_ANON_KEY: window.CALENDEY_ENV?.SUPABASE_ANON_KEY || localStorage.getItem('calendey_supabase_anon_key') || '',
 
   // Limits & Validations (Sesuai PRD)
   MAX_UPLOAD_SIZE_BYTES: 5 * 1024 * 1024, // 5 MB
@@ -51,3 +51,34 @@ export const CONFIG = {
     POSTED: { id: 'posted', label: 'Sudah Diposting', badgeClass: 'posted' }
   }
 };
+
+/**
+ * Memuat kredensial Supabase secara dinamis dari Serverless Function (/api/config)
+ * Menjamin file JavaScript di repo tidak mengandung kredensial sensitif
+ */
+export async function loadRuntimeConfig() {
+  if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
+    return;
+  }
+
+  // 1. Coba ambil dari Vercel Serverless Function
+  try {
+    const res = await fetch('/api/config');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.supabaseUrl && data.supabaseAnonKey) {
+        CONFIG.SUPABASE_URL = data.supabaseUrl;
+        CONFIG.SUPABASE_ANON_KEY = data.supabaseAnonKey;
+        return;
+      }
+    }
+  } catch (err) {
+    // Non-blocking jika di environment offline/lokal
+  }
+
+  // 2. Fallback ke window.CALENDEY_ENV jika ada (untuk local development)
+  if (window.CALENDEY_ENV) {
+    CONFIG.SUPABASE_URL = CONFIG.SUPABASE_URL || window.CALENDEY_ENV.SUPABASE_URL || '';
+    CONFIG.SUPABASE_ANON_KEY = CONFIG.SUPABASE_ANON_KEY || window.CALENDEY_ENV.SUPABASE_ANON_KEY || '';
+  }
+}

@@ -6,13 +6,12 @@ import { state } from './state.js';
 import { db } from './db.js';
 import { notify } from './notifications.js';
 
-// Akun Utama Bawaan Sesuai Permintaan
+// Akun Utama Bawaan Sesuai Permintaan (Tanpa Password di File JS)
 export const DEFAULT_ACCOUNTS = [
   {
     id: '3c72477c-5c56-44a8-91aa-8cfd1367db06',
     username: 'Superadmin',
     email: 'superadmin@calendey.app',
-    password: 'admin-calender',
     full_name: 'Superadmin',
     role: 'Admin',
     whatsapp_number: '6281219958750',
@@ -26,7 +25,6 @@ export const DEFAULT_ACCOUNTS = [
     id: '1df2ed64-32c9-446f-852a-2e3d13d92adb',
     username: 'dhafin',
     email: 'dhafinshabir610@gmail.com',
-    password: 'dhafin12345',
     full_name: 'Dhafin Shabir Alfatih',
     role: 'User',
     whatsapp_number: '6281234567890',
@@ -51,6 +49,12 @@ class AuthService {
     } catch (e) {
       allAccounts = [];
     }
+
+    // Bersihkan password plain-text warisan dari local storage jika pernah tersimpan
+    allAccounts = allAccounts.map(a => {
+      const { password, ...safeAccount } = a;
+      return safeAccount;
+    });
 
     // Pastikan akun Superadmin dan Dhafin selalu ada dan ter-update dengan UUID Supabase resmi
     DEFAULT_ACCOUNTS.forEach(defAcc => {
@@ -88,7 +92,11 @@ class AuthService {
       state.set('user', null);
     }
 
-    // Jika Supabase cloud aktif, dengarkan perubahan sesi
+    // Dengarkan perubahan sesi
+    this.setupSessionListener();
+  }
+
+  setupSessionListener() {
     if (db.client) {
       try {
         db.client.auth.onAuthStateChange(async (event, session) => {
@@ -133,7 +141,7 @@ class AuthService {
     const cleanId = identifier.trim().toLowerCase();
     const cleanPass = password.trim();
 
-    // 1. Cek dari daftar akun terdaftar (Superadmin, dhafin, atau akun yang dibuat admin)
+    // 1. Tentukan email pengguna dari input username atau email langsung
     let accounts = [];
     try {
       accounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
@@ -142,89 +150,43 @@ class AuthService {
     }
 
     const matchedAccount = accounts.find(
-      a => (a.username?.toLowerCase() === cleanId || a.email?.toLowerCase() === cleanId) && a.password === cleanPass
+      a => (a.username?.toLowerCase() === cleanId || a.email?.toLowerCase() === cleanId)
     );
 
-    if (matchedAccount) {
-      // 1. Simpan sesi lokal terlebih dahulu
-      state.set('user', matchedAccount);
-      localStorage.setItem('calendey_user_profile', JSON.stringify(matchedAccount));
+    const targetEmail = cleanId.includes('@')
+      ? cleanId
+      : (matchedAccount?.email || `${cleanId}@calendey.app`);
 
-      // 2. Jika Supabase Cloud aktif, otomatis sinkronkan ke auth.users dan tabel public.profiles
-      if (db.client && matchedAccount.email) {
-        try {
-          let supaUserId = null;
-          const { data: signInData } = await db.client.auth.signInWithPassword({
-            email: matchedAccount.email,
-            password: matchedAccount.password
-          });
-
-          if (signInData?.user) {
-            supaUserId = signInData.user.id;
-          } else {
-            const { data: signUpData } = await db.client.auth.signUp({
-              email: matchedAccount.email,
-              password: matchedAccount.password,
-              options: {
-                data: {
-                  full_name: matchedAccount.full_name,
-                  whatsapp_number: matchedAccount.whatsapp_number
-                }
-              }
-            });
-            if (signUpData?.user) {
-              supaUserId = signUpData.user.id;
-            }
-          }
-
-          if (supaUserId) {
-            matchedAccount.id = supaUserId;
-            state.set('user', matchedAccount);
-            localStorage.setItem('calendey_user_profile', JSON.stringify(matchedAccount));
-
-            const { error: profErr } = await db.client.from('profiles').upsert({
-              id: supaUserId,
-              full_name: matchedAccount.full_name,
-              whatsapp_number: matchedAccount.whatsapp_number,
-              theme: matchedAccount.theme || 'light',
-              reminders_enabled: true,
-              updated_at: new Date().toISOString()
-            });
-
-            if (!profErr) {
-              console.log('[Calendey Auth] Data profil berhasil masuk ke public.profiles Supabase:', supaUserId);
-            } else {
-              console.warn('[Calendey Auth] Upsert public.profiles notice:', profErr);
-            }
-          }
-        } catch (syncErr) {
-          console.warn('[Calendey Auth] Sinkronisasi cloud Supabase:', syncErr);
-        }
-      }
-
-      notify.success(`Selamat datang, ${matchedAccount.full_name}!`);
-      return { success: true, user: matchedAccount };
-    }
-
-    // 2. Jika ada Supabase Auth terhubung, coba verifikasi ke cloud
-    if (db.client && cleanId.includes('@')) {
+    // 2. Autentikasi langsung ke Supabase Auth secara aman melalui HTTPS
+    if (db.client) {
       try {
-        const { data, error } = await db.client.auth.signInWithPassword({
-          email: cleanId,
+        const { data: authData, error: authError } = await db.client.auth.signInWithPassword({
+          email: targetEmail,
           password: cleanPass
         });
-        if (!error && data?.user) {
-          await this.loadUserProfile(data.user.id, data.user.email);
-          notify.success(`Selamat datang, ${state.get('user')?.full_name || 'User'}!`);
-          return { success: true, user: state.get('user') };
+
+        if (!authError && authData?.user) {
+          await this.loadUserProfile(authData.user.id, targetEmail);
+          const activeUser = state.get('user') || matchedAccount || {
+            id: authData.user.id,
+            email: targetEmail,
+            full_name: matchedAccount?.full_name || cleanId
+          };
+          notify.success(`Selamat datang, ${activeUser.full_name || 'User'}!`);
+          return { success: true, user: activeUser };
+        }
+
+        if (authError) {
+          notify.error('Username/Email atau password salah!');
+          return { success: false, error: authError.message };
         }
       } catch (err) {
-        console.warn('[Calendey Auth] Cloud auth check:', err);
+        console.warn('[Calendey Auth] Supabase auth check error:', err);
       }
     }
 
-    notify.error('Username/Email atau password salah!');
-    return { success: false, error: 'Kredensial tidak valid' };
+    notify.error('Database belum terhubung. Periksa konfigurasi Supabase.');
+    return { success: false, error: 'Database belum terhubung' };
   }
 
   async signUp(email, password, fullName, whatsappNumber) {
@@ -233,14 +195,51 @@ class AuthService {
       return { success: false };
     }
 
-    const profile = {
-      id: 'user-' + Date.now(),
-      username: email.split('@')[0],
-      email: email.trim(),
-      password: password.trim(),
-      full_name: fullName.trim(),
+    const cleanEmail = email.trim();
+    const cleanPass = password.trim();
+    const cleanName = fullName.trim();
+    const cleanPhone = whatsappNumber ? whatsappNumber.trim() : '';
+
+    let newUserId = 'user-' + Date.now();
+
+    // 1. Jika Supabase aktif, daftar melalui Supabase Auth
+    if (db.client) {
+      try {
+        const { data: signUpData, error: signUpErr } = await db.client.auth.signUp({
+          email: cleanEmail,
+          password: cleanPass,
+          options: {
+            data: { full_name: cleanName, whatsapp_number: cleanPhone }
+          }
+        });
+        if (signUpErr) {
+          notify.error(signUpErr.message || 'Gagal mendaftar ke Supabase');
+          return { success: false, error: signUpErr.message };
+        }
+        if (signUpData?.user?.id) {
+          newUserId = signUpData.user.id;
+          await db.client.from('profiles').upsert({
+            id: newUserId,
+            full_name: cleanName,
+            whatsapp_number: cleanPhone,
+            theme: state.get('theme') || 'light',
+            reminders_enabled: true,
+            updated_at: new Date().toISOString()
+          });
+        }
+      } catch (err) {
+        console.warn('[Calendey Auth] SignUp cloud error:', err);
+      }
+    }
+
+    // Profil yang disimpan ke state/localStorage TIDAK MENYIMPAN PASSWORD
+    const safeProfile = {
+      id: newUserId,
+      username: cleanEmail.split('@')[0],
+      email: cleanEmail,
+      full_name: cleanName,
       role: 'User',
-      whatsapp_number: whatsappNumber ? whatsappNumber.trim() : '',
+      whatsapp_number: cleanPhone,
       theme: state.get('theme') || 'light',
       reminders_enabled: true,
       default_remind_offset_days: 1,
@@ -248,31 +247,20 @@ class AuthService {
       timezone: 'Asia/Jakarta'
     };
 
-    // Tambah ke daftar akun
     let accounts = [];
     try {
       accounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
     } catch (e) {
       accounts = [];
     }
-    accounts.push(profile);
+    accounts.push(safeProfile);
     localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
 
-    state.set('user', profile);
-    localStorage.setItem('calendey_user_profile', JSON.stringify(profile));
+    state.set('user', safeProfile);
+    localStorage.setItem('calendey_user_profile', JSON.stringify(safeProfile));
 
-    if (db.client) {
-      try {
-        await db.client.auth.signUp({
-          email: profile.email,
-          password: profile.password,
-          options: { data: { full_name: profile.full_name, whatsapp_number: profile.whatsapp_number } }
-        });
-      } catch (e) { }
-    }
-
-    notify.success(`Akun ${profile.full_name} berhasil dibuat!`);
-    return { success: true, user: profile };
+    notify.success(`Akun ${safeProfile.full_name} berhasil dibuat!`);
+    return { success: true, user: safeProfile };
   }
 
   async signOut() {
@@ -288,23 +276,13 @@ class AuthService {
   }
 
   async getOrEnsureSupabaseUUID(user) {
-    if (!db.client || !user?.email) return null;
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id || '');
+    if (!db.client) return null;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user?.id || '');
     if (isUUID) return user.id;
 
     try {
-      const { data: signInData } = await db.client.auth.signInWithPassword({
-        email: user.email,
-        password: user.password || 'admin-calender'
-      });
-      if (signInData?.user?.id) return signInData.user.id;
-
-      const { data: signUpData } = await db.client.auth.signUp({
-        email: user.email,
-        password: user.password || 'admin-calender',
-        options: { data: { full_name: user.full_name, whatsapp_number: user.whatsapp_number } }
-      });
-      return signUpData?.user?.id || null;
+      const { data } = await db.client.auth.getUser();
+      return data?.user?.id || null;
     } catch (e) {
       return null;
     }

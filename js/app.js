@@ -10,7 +10,7 @@ import { calendar } from './calendar.js';
 import { planner } from './planner.js';
 import { viewManager } from './views.js';
 import { modals } from './modals.js';
-import { CONFIG } from './config.js';
+import { CONFIG, loadRuntimeConfig } from './config.js';
 import { notify } from './notifications.js';
 
 class CalendeyApp {
@@ -31,8 +31,10 @@ class CalendeyApp {
     planner.init();
     viewManager.init();
 
-    // 4. Inisialisasi Database & Fetch Master Data
+    // 4. Inisialisasi Kredensial Runtime Aman & Database
+    await loadRuntimeConfig();
     await db.init();
+    auth.setupSessionListener();
 
     // 5. Setup Global DOM Event Listeners
     this.bindEvents();
