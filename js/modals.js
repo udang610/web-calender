@@ -695,11 +695,17 @@ class ModalManager {
         return;
       }
 
+      const saveBtn = document.getElementById('btnAdminSaveAccount');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Menyimpan...';
+      }
+
       // 1. Simpan ke Supabase Auth jika cloud aktif
       if (db.client) {
         try {
           await db.client.auth.signUp({
-            email,
+            email: email.toLowerCase(),
             password: pass,
             options: { data: { full_name: name, whatsapp_number: wa } }
           });
@@ -708,18 +714,35 @@ class ModalManager {
         }
       }
 
-      // 2. Simpan ke local accounts
-      accounts.push({
+      // 2. Simpan ke local accounts dengan atribut lengkap (username & password)
+      const cleanUsername = name.toLowerCase().replace(/\s+/g, '');
+      const newAcc = {
         id: 'acc-' + Date.now(),
-        name,
-        email,
+        username: cleanUsername,
+        name: name,
+        full_name: name,
+        email: email.toLowerCase(),
+        password: pass,
         whatsapp: wa,
-        role,
+        whatsapp_number: wa,
+        role: role,
         created_at: new Date().toISOString().split('T')[0]
-      });
+      };
+
+      // Perbarui jika sudah ada akun dengan email/username yang sama
+      const existIdx = accounts.findIndex(a => 
+        a.email?.toLowerCase() === email.toLowerCase() || 
+        a.name?.toLowerCase() === name.toLowerCase() ||
+        a.username?.toLowerCase() === cleanUsername
+      );
+      if (existIdx !== -1) {
+        accounts[existIdx] = { ...accounts[existIdx], ...newAcc };
+      } else {
+        accounts.push(newAcc);
+      }
 
       localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
-      notify.success(`Akun ${name} berhasil dibuat!`);
+      notify.success(`Akun "${name}" berhasil dibuat & siap digunakan!`);
       this.openAdminPanelModal();
     });
   }

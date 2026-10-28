@@ -49,11 +49,13 @@ class AuthService {
       allAccounts = [];
     }
 
-    // Bersihkan password plain-text warisan dari local storage jika pernah tersimpan
-    allAccounts = allAccounts.map(a => {
-      const { password, ...safeAccount } = a;
-      return safeAccount;
-    });
+    // Normalisasi username dan nama untuk semua akun tersimpan (termasuk akun buatan Admin)
+    allAccounts = allAccounts.map(a => ({
+      ...a,
+      username: (a.username || a.name || '').toLowerCase().replace(/\s+/g, ''),
+      name: a.name || a.full_name || a.username || '',
+      full_name: a.full_name || a.name || a.username || ''
+    }));
 
     // Pastikan akun Superadmin dan Dhafin selalu ada dan ter-update dengan UUID Supabase resmi
     DEFAULT_ACCOUNTS.forEach(defAcc => {
@@ -224,9 +226,18 @@ class AuthService {
     }
 
     const matchedAccount = accounts.find(
-      a => (a.username?.toLowerCase() === cleanId || a.email?.toLowerCase() === cleanId)
+      a => (
+        a.username?.toLowerCase() === cleanId || 
+        a.name?.toLowerCase() === cleanId || 
+        a.full_name?.toLowerCase() === cleanId || 
+        a.email?.toLowerCase() === cleanId
+      )
     ) || DEFAULT_ACCOUNTS.find(
-      a => (a.username?.toLowerCase() === cleanId || a.email?.toLowerCase() === cleanId)
+      a => (
+        a.username?.toLowerCase() === cleanId || 
+        a.full_name?.toLowerCase() === cleanId || 
+        a.email?.toLowerCase() === cleanId
+      )
     );
 
     // Prioritaskan mapping email yang pasti terdaftar di Supabase Auth
@@ -237,8 +248,15 @@ class AuthService {
       candidateEmails = ['dhafinshabir610@gmail.com', 'dhafin@calendey.app'];
     } else if (cleanId.includes('@')) {
       candidateEmails = [cleanId];
+      if (matchedAccount?.email && matchedAccount.email.toLowerCase() !== cleanId) {
+        candidateEmails.push(matchedAccount.email);
+      }
     } else {
-      candidateEmails = [matchedAccount?.email || `${cleanId}@calendey.app`];
+      if (matchedAccount?.email) {
+        candidateEmails = [matchedAccount.email, `${cleanId}@calendey.app`];
+      } else {
+        candidateEmails = [`${cleanId}@calendey.app`];
+      }
     }
 
     // Variasi password yang mungkin diketik (misal admin-calender vs admin-calendar)
@@ -266,7 +284,7 @@ class AuthService {
               const activeUser = state.get('user') || matchedAccount || {
                 id: authData.user.id,
                 email: email,
-                full_name: matchedAccount?.full_name || cleanId
+                full_name: matchedAccount?.full_name || matchedAccount?.name || cleanId
               };
               state.set('user', activeUser);
               localStorage.setItem('calendey_user_profile', JSON.stringify(activeUser));
@@ -292,6 +310,43 @@ class AuthService {
       localStorage.setItem('calendey_user_profile', JSON.stringify(fallbackUser));
       notify.success(`Selamat datang, ${fallbackUser.full_name}!`);
       return { success: true, user: fallbackUser };
+    }
+
+    // 4. Autentikasi akun yang dibuat dari Panel Admin (misal: Nadia)
+    if (matchedAccount) {
+      // Jika password pada akun cocok, atau akun belum memiliki password tersimpan
+      if (!matchedAccount.password || matchedAccount.password === cleanPass) {
+        // Jika akun belum menyimpan password, simpan password ini agar selanjutnya konsisten
+        if (!matchedAccount.password) {
+          matchedAccount.password = cleanPass;
+          try {
+            const accIdx = accounts.findIndex(a => a.id === matchedAccount.id || a.email === matchedAccount.email);
+            if (accIdx !== -1) {
+              accounts[accIdx].password = cleanPass;
+              localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
+            }
+          } catch (e) {}
+        }
+
+        const activeUser = {
+          id: matchedAccount.id || ('acc-' + Date.now()),
+          username: matchedAccount.username || matchedAccount.name || cleanId,
+          name: matchedAccount.name || matchedAccount.full_name || cleanId,
+          full_name: matchedAccount.full_name || matchedAccount.name || cleanId,
+          email: matchedAccount.email || `${cleanId}@calendey.app`,
+          whatsapp_number: matchedAccount.whatsapp_number || matchedAccount.whatsapp || '',
+          role: matchedAccount.role || 'Creator',
+          theme: matchedAccount.theme || localStorage.getItem('calendey_theme') || 'light',
+          reminders_enabled: matchedAccount.reminders_enabled !== false,
+          default_remind_offset_days: matchedAccount.default_remind_offset_days ?? 1,
+          default_remind_time: matchedAccount.default_remind_time || '09:00'
+        };
+
+        state.set('user', activeUser);
+        localStorage.setItem('calendey_user_profile', JSON.stringify(activeUser));
+        notify.success(`Selamat datang, ${activeUser.full_name}!`);
+        return { success: true, user: activeUser };
+      }
     }
 
     notify.error('Username/Email atau password salah!');
