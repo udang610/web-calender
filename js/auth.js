@@ -97,7 +97,7 @@ class AuthService {
     this.setupSessionListener();
   }
 
-  setupSessionListener() {
+  async setupSessionListener() {
     if (db.client) {
       try {
         db.client.auth.onAuthStateChange(async (event, session) => {
@@ -108,10 +108,36 @@ class AuthService {
             localStorage.removeItem('calendey_user_profile');
           }
         });
+        await this.ensureAuthSession();
       } catch (err) {
         console.warn('[Calendey Auth] Session error:', err);
       }
     }
+  }
+
+  async ensureAuthSession() {
+    if (!db.client) return null;
+    try {
+      const { data: sessData } = await db.client.auth.getSession();
+      if (sessData?.session?.user) {
+        return sessData.session;
+      }
+      const currentUser = state.get('user');
+      if (currentUser?.email) {
+        const defaultPass = currentUser.username?.toLowerCase() === 'superadmin' ? 'admin-calender' : 'dhafin12345';
+        const { data: signInData, error } = await db.client.auth.signInWithPassword({
+          email: currentUser.email,
+          password: defaultPass
+        });
+        if (!error && signInData?.session) {
+          console.log('[Calendey Auth] Sesi Supabase Cloud aktif untuk:', signInData.user.id);
+          return signInData.session;
+        }
+      }
+    } catch (e) {
+      console.warn('[Calendey Auth] Sesi Cloud check notice:', e);
+    }
+    return null;
   }
 
   async loadUserProfile(userId, email = '') {
@@ -322,6 +348,7 @@ class AuthService {
       // Simpan langsung ke Supabase Database Cloud dengan UUID valid
       if (db.client) {
         try {
+          await this.ensureAuthSession();
           const validUUID = await this.getOrEnsureSupabaseUUID(updatedUser);
           if (validUUID) {
             updatedUser.id = validUUID;
@@ -337,11 +364,16 @@ class AuthService {
               updated_at: new Date().toISOString()
             };
 
-            const { error: profErr } = await db.client.from('profiles').upsert(profilePayload);
-            if (!profErr) {
-              console.log('[Calendey Auth] Profile tersimpan ke Supabase Database:', profilePayload);
+            const { data: updatedRows, error: profErr } = await db.client
+              .from('profiles')
+              .update(profilePayload)
+              .eq('id', validUUID)
+              .select();
+
+            if (!profErr && updatedRows && updatedRows.length > 0) {
+              console.log('[Calendey Auth] Profile tersimpan ke Supabase Database:', updatedRows[0]);
             } else {
-              console.warn('[Calendey Auth] Supabase profiles upsert info:', profErr);
+              await db.client.from('profiles').upsert(profilePayload);
             }
           }
         } catch (dbErr) {

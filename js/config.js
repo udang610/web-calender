@@ -15,9 +15,9 @@ export const CONFIG = {
   DEFAULT_THEME: 'light',
   TIMEZONE: 'Asia/Jakarta',
 
-  // Supabase Credentials — Aman & Dinamis (diisi dari /api/config di Vercel atau window.CALENDEY_ENV di lokal)
-  SUPABASE_URL: window.CALENDEY_ENV?.SUPABASE_URL || localStorage.getItem('calendey_supabase_url') || '',
-  SUPABASE_ANON_KEY: window.CALENDEY_ENV?.SUPABASE_ANON_KEY || localStorage.getItem('calendey_supabase_anon_key') || '',
+  // Supabase Credentials — Terhubung Langsung ke Project Supabase web-calender
+  SUPABASE_URL: window.CALENDEY_ENV?.SUPABASE_URL || localStorage.getItem('calendey_supabase_url') || 'https://oyaacvgankdwmbavfoqh.supabase.co',
+  SUPABASE_ANON_KEY: window.CALENDEY_ENV?.SUPABASE_ANON_KEY || localStorage.getItem('calendey_supabase_anon_key') || 'sb_publishable_gXGHTsHz7Jb2uhTPDqBslw__XV0UZ7w',
 
   // Limits & Validations (Sesuai PRD)
   MAX_UPLOAD_SIZE_BYTES: 5 * 1024 * 1024, // 5 MB
