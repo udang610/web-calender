@@ -808,6 +808,105 @@ class ModalManager {
     `;
     this.modalOverlay.classList.add('active');
   }
+
+  openConfirmModal({
+    title = 'Konfirmasi Tindakan',
+    message = 'Apakah Anda yakin ingin melanjutkan tindakan ini?',
+    icon = 'ph-warning-circle',
+    confirmText = 'Lanjutkan',
+    cancelText = 'Batal',
+    confirmType = 'danger',
+    onConfirm = () => {},
+    onCancel = () => {}
+  }) {
+    if (!this.modalOverlay) this.init();
+
+    const isDanger = confirmType === 'danger';
+    const accentColor = isDanger ? '#ef4444' : (confirmType === 'warning' ? '#f59e0b' : 'var(--primary)');
+    const accentBg = isDanger ? 'rgba(239, 68, 68, 0.12)' : (confirmType === 'warning' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(239, 68, 68, 0.1)');
+
+    this.modalOverlay.innerHTML = `
+      <div class="modal-card" style="max-width: 420px; text-align: center; padding: 28px 24px;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: ${accentBg}; color: ${accentColor}; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 1.75rem;">
+          <i class="ph-bold ${icon}"></i>
+        </div>
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text); margin-bottom: 8px;">${title}</h3>
+        <p style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 22px;">${message}</p>
+        
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button type="button" class="btn-secondary" id="confirmModalCancelBtn" style="flex: 1; justify-content: center; padding: 10px 16px; font-weight: 600;">
+            ${cancelText}
+          </button>
+          <button type="button" class="btn-primary" id="confirmModalActionBtn" style="flex: 1; justify-content: center; padding: 10px 16px; font-weight: 700; ${isDanger ? 'background: #ef4444; border-color: #ef4444;' : ''}">
+            ${confirmText}
+          </button>
+        </div>
+      </div>
+    `;
+
+    this.modalOverlay.classList.add('active');
+
+    const cancelBtn = document.getElementById('confirmModalCancelBtn');
+    const actionBtn = document.getElementById('confirmModalActionBtn');
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        this.close();
+        if (typeof onCancel === 'function') onCancel();
+      });
+    }
+
+    if (actionBtn) {
+      actionBtn.addEventListener('click', () => {
+        this.close();
+        if (typeof onConfirm === 'function') onConfirm();
+      });
+    }
+  }
+
+  openReminderAlertModal(plan) {
+    if (!this.modalOverlay) this.init();
+
+    const user = state.get('user') || {};
+    let phone = user.whatsapp_number || '6281219958750';
+    phone = String(phone).replace(/[^0-9]/g, '');
+    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
+    else if (!phone.startsWith('62')) phone = '62' + phone;
+
+    const timeStr = plan.remind_time || '15:00';
+
+    this.modalOverlay.innerHTML = `
+      <div class="modal-card" style="max-width: 440px; text-align: center; padding: 28px 24px;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(37, 211, 102, 0.12); color: #25d366; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 2rem;">
+          <i class="ph-bold ph-whatsapp-logo"></i>
+        </div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Waktunya Posting Konten!</div>
+        <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text); margin-bottom: 8px;">${plan.title}</h3>
+        <p style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px;">
+          Jadwal pengingat jam <strong>${timeStr} WIB</strong> telah tiba untuk nomor <strong>+${phone}</strong>. Kirimkan pesan draf konten sekarang ke WhatsApp Anda.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button type="button" class="btn-primary" id="btnAlertOpenWA" style="background: #25d366; border-color: #25d366; justify-content: center; padding: 12px; font-weight: 700;">
+            <i class="ph-bold ph-paper-plane-tilt"></i> Buka & Kirim WhatsApp Sekarang
+          </button>
+          <button type="button" class="btn-secondary" onclick="window.calendeyCloseModal()" style="justify-content: center; padding: 10px;">
+            Nanti Saja
+          </button>
+        </div>
+      </div>
+    `;
+
+    this.modalOverlay.classList.add('active');
+
+    const waBtn = document.getElementById('btnAlertOpenWA');
+    if (waBtn) {
+      waBtn.addEventListener('click', () => {
+        this.close();
+        window.calendeySendWhatsAppReminder(plan.id);
+      });
+    }
+  }
 }
 
 export const modals = new ModalManager();
@@ -815,17 +914,39 @@ export const modals = new ModalManager();
 // Global window helpers for HTML inline clicks
 window.calendeyCloseModal = () => modals.close();
 window.calendeyOpenAuth = (tab) => modals.openAuthModal(tab);
-window.calendeyLogout = async () => {
-  await auth.signOut();
-  modals.close();
+
+window.calendeyConfirm = (options) => {
+  return new Promise((resolve) => {
+    modals.openConfirmModal({
+      ...options,
+      onConfirm: () => resolve(true),
+      onCancel: () => resolve(false)
+    });
+  });
 };
+
+window.calendeyLogout = async () => {
+  const confirmed = await window.calendeyConfirm({
+    title: 'Keluar dari Akun?',
+    message: 'Apakah Anda yakin ingin mengakhiri sesi masuk ini?',
+    icon: 'ph-sign-out',
+    confirmText: 'Ya, Keluar',
+    cancelText: 'Batal',
+    confirmType: 'warning'
+  });
+
+  if (confirmed) {
+    await auth.signOut();
+    modals.close();
+  }
+};
+
 window.calendeySetTheme = async (themeName) => {
   if (!['light', 'dark', 'pink'].includes(themeName)) return;
 
   state.set('theme', themeName);
   document.documentElement.setAttribute('data-theme', themeName);
 
-  // 1. Sinkronkan tampilan semua tombol tema di UI (dropdown & modal)
   if (typeof window.calendeySyncThemeButtons === 'function') {
     window.calendeySyncThemeButtons(themeName);
   } else {
@@ -835,7 +956,6 @@ window.calendeySetTheme = async (themeName) => {
     });
   }
 
-  // 2. Simpan perubahan tema ke database Supabase Cloud
   try {
     if (auth && typeof auth.updateProfile === 'function') {
       await auth.updateProfile({ theme: themeName }, false);
@@ -846,18 +966,28 @@ window.calendeySetTheme = async (themeName) => {
 
   notify.info(`Tema diubah ke ${themeName.toUpperCase()}`);
 };
-window.calendeyDeleteAccount = (idx) => {
-  try {
-    let accounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
-    const removed = accounts.splice(idx, 1);
-    localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
-    notify.info(`Akun ${removed[0]?.name || ''} telah dihapus`);
-    modals.openAdminPanelModal();
-  } catch (e) { }
+
+window.calendeyDeleteAccount = async (idx) => {
+  const confirmed = await window.calendeyConfirm({
+    title: 'Hapus Akun Pengguna?',
+    message: 'Apakah Anda yakin ingin menghapus akun ini dari sistem?',
+    icon: 'ph-user-minus',
+    confirmText: 'Hapus Akun',
+    cancelText: 'Batal',
+    confirmType: 'danger'
+  });
+
+  if (confirmed) {
+    try {
+      let accounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
+      const removed = accounts.splice(idx, 1);
+      localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
+      notify.info(`Akun ${removed[0]?.name || ''} telah dihapus`);
+      modals.openAdminPanelModal();
+    } catch (e) { }
+  }
 };
 
-// Global window helpers for HTML inline clicks
-window.calendeyCloseModal = () => modals.close();
 window.calendeyPreviewImage = (src) => modals.previewImage(src);
 window.calendeyRemoveAsset = (idx) => {
   modals.tempUploadedAssets.splice(idx, 1);
@@ -875,9 +1005,20 @@ window.calendeyOpenNewPlanOnDate = (dateStr, nationalDayId) => {
   });
 };
 window.calendeyDeletePlan = async (planId) => {
-  if (confirm('Apakah Anda yakin ingin menghapus rencana konten ini?')) {
-    await db.deleteContentPlan(planId);
-    modals.close();
+  const confirmed = await window.calendeyConfirm({
+    title: 'Hapus Rencana Konten?',
+    message: 'Apakah Anda yakin ingin menghapus rencana konten ini? Tindakan ini akan menghapus data dan jadwal reminder dari sistem.',
+    icon: 'ph-trash',
+    confirmText: 'Ya, Hapus',
+    cancelText: 'Batal',
+    confirmType: 'danger'
+  });
+
+  if (confirmed) {
+    const success = await db.deleteContentPlan(planId);
+    if (success) {
+      modals.close();
+    }
   }
 };
 

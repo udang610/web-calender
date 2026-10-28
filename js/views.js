@@ -165,6 +165,19 @@ class ViewManager {
               <span>Kirim pengingat otomatis ke WhatsApp</span>
             </label>
           </div>
+          <div class="form-group" style="padding: 14px; background: var(--bg-subtle); border-radius: var(--radius-md); border: 1px solid var(--surface-border);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+              <label class="form-label" style="margin: 0; font-weight: 700;">
+                <i class="ph-bold ph-broadcast" style="color: #10b981; margin-right: 4px;"></i> Token Gateway WA Server (Fonnte API)
+              </label>
+              <span style="font-size: 0.72rem; color: #10b981; font-weight: 700; background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px;">Opsional Otomatis</span>
+            </div>
+            <input type="password" id="pageSettingsFonnteToken" class="form-input" style="padding-left: 14px; font-family: monospace;" value="${localStorage.getItem('calendey_fonnte_token') || ''}" placeholder="Masukkan API Token Fonnte (fonnte.com)">
+            <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 5px; line-height: 1.4;">
+              Diperlukan jika Anda ingin pesan WA terkirim otomatis di latar belakang server tanpa perlu menekan tombol 'Kirim WA'. Dapatkan token gratis di <a href="https://fonnte.com" target="_blank" style="color: var(--primary); text-decoration: underline;">fonnte.com</a>.
+            </span>
+          </div>
+
           <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
             <button class="btn-primary" id="btnSavePageSettings" style="flex: 1; justify-content: center;">
               <i class="ph-bold ph-floppy-disk"></i> Simpan Pengaturan
@@ -181,14 +194,26 @@ class ViewManager {
     if (saveBtn) {
       saveBtn.addEventListener('click', async () => {
         const full_name = document.getElementById('pageSettingsName')?.value.trim();
-        const whatsapp_number = document.getElementById('pageSettingsWA')?.value.trim();
+        let whatsapp_number = document.getElementById('pageSettingsWA')?.value.trim();
         const default_remind_offset_days = parseInt(document.getElementById('pageSettingsOffset')?.value || '1', 10);
         const default_remind_time = document.getElementById('pageSettingsTime')?.value || '09:00';
         const reminders_enabled = document.getElementById('pageSettingsEnableWA')?.checked ?? true;
+        const fonnteToken = document.getElementById('pageSettingsFonnteToken')?.value.trim();
 
-        if (whatsapp_number && !/^62[0-9]{8,13}$/.test(whatsapp_number)) {
-          notify.error('Nomor WhatsApp harus diawali kode 62 (contoh: 6281234567890)');
-          return;
+        // Normalisasi nomor HP otomatis (08xxx -> 628xxx)
+        if (whatsapp_number) {
+          whatsapp_number = whatsapp_number.replace(/[^0-9]/g, '');
+          if (whatsapp_number.startsWith('0')) {
+            whatsapp_number = '62' + whatsapp_number.substring(1);
+          } else if (!whatsapp_number.startsWith('62')) {
+            whatsapp_number = '62' + whatsapp_number;
+          }
+          const inputEl = document.getElementById('pageSettingsWA');
+          if (inputEl) inputEl.value = whatsapp_number;
+        }
+
+        if (fonnteToken !== undefined) {
+          localStorage.setItem('calendey_fonnte_token', fonnteToken);
         }
 
         saveBtn.disabled = true;
@@ -210,7 +235,12 @@ class ViewManager {
     const testBtn = document.getElementById('btnTestPageSettingsWA');
     if (testBtn) {
       testBtn.addEventListener('click', () => {
-        const wa = document.getElementById('pageSettingsWA')?.value.trim();
+        let wa = document.getElementById('pageSettingsWA')?.value.trim();
+        if (wa) {
+          wa = wa.replace(/[^0-9]/g, '');
+          if (wa.startsWith('0')) wa = '62' + wa.substring(1);
+          else if (!wa.startsWith('62')) wa = '62' + wa;
+        }
         if (typeof window.calendeyTestWhatsAppNotification === 'function') {
           window.calendeyTestWhatsAppNotification(wa);
         }

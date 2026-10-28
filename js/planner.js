@@ -163,6 +163,9 @@ class PlannerViewEngine {
                   <button class="btn-secondary" style="padding: 5px 12px; font-size: 0.78rem;" onclick="window.calendeyOpenPlanDetail('${plan.id}')">
                     <i class="ph-bold ph-note-pencil"></i> Edit & Detail
                   </button>
+                  <button class="btn-secondary" style="padding: 5px 8px; font-size: 0.78rem; color: var(--danger); border-color: rgba(239, 68, 68, 0.25);" title="Hapus Konten" onclick="window.calendeyDeletePlan('${plan.id}')">
+                    <i class="ph-bold ph-trash"></i>
+                  </button>
                 </div>
               </div>
             `;

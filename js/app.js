@@ -45,6 +45,10 @@ class CalendeyApp {
 
     // 7. Initial View Render
     viewManager.switchView('calendar');
+
+    // 8. In-App Realtime Reminder Watcher
+    this.initReminderChecker();
+
     console.log('[Calendey] Ready!');
   }
 
@@ -106,6 +110,43 @@ class CalendeyApp {
 
     // Sinkronkan tombol tema sesuai preferensi user
     this.syncThemeButtons(state.get('theme'));
+  }
+
+  initReminderChecker() {
+    setInterval(() => {
+      const user = state.get('user');
+      if (!user || user.reminders_enabled === false) return;
+
+      const plans = state.get('contentPlans') || [];
+      const now = new Date();
+      const currentHours = String(now.getHours()).padStart(2, '0');
+      const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+      const nowTimeStr = `${currentHours}:${currentMinutes}`;
+      const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+      for (const plan of plans) {
+        if (plan.is_posted) continue;
+        if (plan.reminder_enabled === false) continue;
+        if (!plan.planned_date) continue;
+
+        const offset = parseInt(plan.remind_offset_days ?? user.default_remind_offset_days ?? 1, 10);
+        const targetDate = new Date(plan.planned_date + 'T00:00:00');
+        targetDate.setDate(targetDate.getDate() - offset);
+        const planRemindDateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
+        const planRemindTime = plan.remind_time || user.default_remind_time || '09:00';
+
+        if (planRemindDateStr === todayDateStr && nowTimeStr >= planRemindTime) {
+          const notifiedKey = `calendey_alerted_${plan.id}_${planRemindDateStr}_${planRemindTime}`;
+          if (!sessionStorage.getItem(notifiedKey)) {
+            sessionStorage.setItem(notifiedKey, 'true');
+            if (modals && typeof modals.openReminderAlertModal === 'function') {
+              modals.openReminderAlertModal(plan);
+            }
+            break;
+          }
+        }
+      }
+    }, 20000);
   }
 
   bindEvents() {

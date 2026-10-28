@@ -311,14 +311,21 @@ class DatabaseService {
       localStorage.setItem('calendey_plans_cache', JSON.stringify(filtered));
 
       if (this.isCloudConnected && state.get('user')) {
-        this.client.from('reminders').delete().eq('content_plan_id', planId).catch(() => {});
-        this.client.from('content_plans').delete().eq('id', planId).catch(() => {});
+        try {
+          await this.client.from('reminders').delete().eq('content_plan_id', planId);
+          await this.client.from('content_plans').delete().eq('id', planId);
+          console.log('[Calendey DB] Sukses menghapus konten dari Supabase:', planId);
+        } catch (cloudErr) {
+          console.warn('[Calendey DB] Catatan cloud delete:', cloudErr);
+        }
       }
 
       notify.info('Rencana konten telah dihapus');
+      return true;
     } catch (err) {
       console.error('[Calendey DB] Gagal menghapus konten:', err);
       notify.error('Gagal menghapus konten');
+      return false;
     }
   }
 
