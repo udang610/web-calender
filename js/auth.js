@@ -9,13 +9,13 @@ import { notify } from './notifications.js';
 // Akun Utama Bawaan Sesuai Permintaan
 export const DEFAULT_ACCOUNTS = [
   {
-    id: 'admin-super',
+    id: '3c72477c-5c56-44a8-91aa-8cfd1367db06',
     username: 'Superadmin',
     email: 'superadmin@calendey.app',
     password: 'admin-calender',
     full_name: 'Superadmin',
     role: 'Admin',
-    whatsapp_number: '6281234567890',
+    whatsapp_number: '6281219958750',
     theme: 'light',
     reminders_enabled: true,
     default_remind_offset_days: 1,
@@ -23,7 +23,7 @@ export const DEFAULT_ACCOUNTS = [
     timezone: 'Asia/Jakarta'
   },
   {
-    id: 'user-dhafin',
+    id: '1df2ed64-32c9-446f-852a-2e3d13d92adb',
     username: 'dhafin',
     email: 'dhafinshabir610@gmail.com',
     password: 'dhafin12345',
@@ -44,7 +44,7 @@ class AuthService {
   }
 
   async init() {
-    // Inisialisasi daftar akun ke localStorage jika belum ada
+    // Inisialisasi daftar akun ke localStorage
     let allAccounts = [];
     try {
       allAccounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
@@ -52,9 +52,16 @@ class AuthService {
       allAccounts = [];
     }
 
-    // Pastikan akun Superadmin dan Dhafin selalu ada
+    // Pastikan akun Superadmin dan Dhafin selalu ada dan ter-update dengan UUID Supabase resmi
     DEFAULT_ACCOUNTS.forEach(defAcc => {
-      if (!allAccounts.some(a => a.username?.toLowerCase() === defAcc.username.toLowerCase() || a.email?.toLowerCase() === defAcc.email.toLowerCase())) {
+      const idx = allAccounts.findIndex(a => 
+        a.username?.toLowerCase() === defAcc.username.toLowerCase() || 
+        a.email?.toLowerCase() === defAcc.email.toLowerCase() ||
+        a.id === defAcc.id
+      );
+      if (idx !== -1) {
+        allAccounts[idx] = { ...allAccounts[idx], ...defAcc };
+      } else {
         allAccounts.push(defAcc);
       }
     });
@@ -64,7 +71,16 @@ class AuthService {
     const cachedProfile = localStorage.getItem('calendey_user_profile');
     if (cachedProfile) {
       try {
-        state.set('user', JSON.parse(cachedProfile));
+        let activeUser = JSON.parse(cachedProfile);
+        const matchedDef = DEFAULT_ACCOUNTS.find(d => 
+          d.username.toLowerCase() === activeUser.username?.toLowerCase() || 
+          d.email.toLowerCase() === activeUser.email?.toLowerCase()
+        );
+        if (matchedDef) {
+          activeUser = { ...activeUser, ...matchedDef };
+          localStorage.setItem('calendey_user_profile', JSON.stringify(activeUser));
+        }
+        state.set('user', activeUser);
       } catch (e) {
         state.set('user', null);
       }
@@ -270,31 +286,6 @@ class AuthService {
     localStorage.removeItem('calendey_user_profile');
     notify.info('Anda telah keluar dari akun');
   }
-
-  async updateProfile(updates) {
-    try {
-      const currentUser = state.get('user') || {};
-      const updatedUser = { ...currentUser, ...updates };
-
-      state.set('user', updatedUser);
-      localStorage.setItem('calendey_user_profile', JSON.stringify(updatedUser));
-
-      // Update di list all accounts
-      let accounts = [];
-      try {
-        accounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
-        const idx = accounts.findIndex(a => 
-          (a.id && a.id === updatedUser.id) ||
-          (a.username && a.username.toLowerCase() === (updatedUser.username || '').toLowerCase()) ||
-          (a.email && a.email.toLowerCase() === (updatedUser.email || '').toLowerCase())
-        );
-        if (idx !== -1) {
-          accounts[idx] = { ...accounts[idx], ...updatedUser };
-        } else {
-          accounts.push(updatedUser);
-        }
-        localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
-      } catch (e) { }
 
   async getOrEnsureSupabaseUUID(user) {
     if (!db.client || !user?.email) return null;

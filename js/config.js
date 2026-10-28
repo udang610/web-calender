@@ -3,15 +3,21 @@
 // Database Supabase Aktif Langsung
 // ========================================================================
 
+// Auto-cleanup stale project references if previously stored
+if (localStorage.getItem('calendey_supabase_url')?.includes('onikjvzk')) {
+  localStorage.removeItem('calendey_supabase_url');
+  localStorage.removeItem('calendey_supabase_anon_key');
+}
+
 export const CONFIG = {
   APP_NAME: 'Calendey',
-  APP_VERSION: '1.0.2',
+  APP_VERSION: '1.0.3',
   DEFAULT_THEME: 'light',
   TIMEZONE: 'Asia/Jakarta',
 
-  // Supabase Credentials — Aktif Terhubung ke Supabase udang610
-  SUPABASE_URL: localStorage.getItem('calendey_supabase_url') || 'https://onikjvzkbhpbubnqjmib.supabase.co',
-  SUPABASE_ANON_KEY: localStorage.getItem('calendey_supabase_anon_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uaWtqdnprYmhwYnVibnFqbWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1NjEyMzgsImV4cCI6MjEwODEzNzIzOH0.VvnY63Ysf3q73_owAdYVeBn96rQEkhDZyqwY4s3W1Gc',
+  // Supabase Credentials — Aktif Terhubung ke Supabase web-calender (udang610)
+  SUPABASE_URL: 'https://oyaacvgankdwmbavfoqh.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_gXGHTsHz7Jb2uhTPDqBslw__XV0UZ7w',
 
   // Limits & Validations (Sesuai PRD)
   MAX_UPLOAD_SIZE_BYTES: 5 * 1024 * 1024, // 5 MB
