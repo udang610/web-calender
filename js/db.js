@@ -79,36 +79,29 @@ class DatabaseService {
 
   async loadContentPlans() {
     try {
+      const isDemoPlan = (p) => {
+        if (!p) return false;
+        return p.id === 'plan-sumpah-pemuda-demo' ||
+               p.id === 'c7e8d644-8d99-4c91-b3b4-56789abcdef0' ||
+               (typeof p.title === 'string' && p.title.toLowerCase().includes('poster hari sumpah pemuda 2026'));
+      };
+
       // 1. Ambil dari cache local storage secara instan
       const cached = localStorage.getItem('calendey_plans_cache');
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
-          const cleaned = this.deduplicatePlans(parsed);
+          const withoutDemo = (parsed || []).filter(p => !isDemoPlan(p));
+          const cleaned = this.deduplicatePlans(withoutDemo);
           state.set('contentPlans', cleaned);
           localStorage.setItem('calendey_plans_cache', JSON.stringify(cleaned));
         } catch (e) {
           console.warn('[Calendey DB] Parse cache error:', e);
+          state.set('contentPlans', []);
         }
       } else {
-        const samplePlans = [
-          {
-            id: 'c7e8d644-8d99-4c91-b3b4-56789abcdef0',
-            title: 'Poster Hari Sumpah Pemuda 2026',
-            national_day_id: 27,
-            planned_date: '2026-10-28',
-            scheduled_at: '2026-10-28T08:00:00Z',
-            platforms: ['instagram', 'tiktok', 'whatsapp_status'],
-            status: 'ready',
-            design_done: true,
-            is_posted: false,
-            caption: 'Bersatu dalam keberagaman! Selamat Hari Sumpah Pemuda 2026. Kobarkan semangat persatuan generasi penerus bangsa! 🇮🇩✨\n\n#SumpahPemuda #IndonesiaMaju #HariNasional',
-            notes: 'Desain format potret 4:5 untuk feed Instagram dan TikTok carousel.',
-            content_assets: []
-          }
-        ];
-        state.set('contentPlans', samplePlans);
-        localStorage.setItem('calendey_plans_cache', JSON.stringify(samplePlans));
+        state.set('contentPlans', []);
+        localStorage.setItem('calendey_plans_cache', JSON.stringify([]));
       }
 
       // 2. Sinkronkan dari Supabase jika user sedang login (asynchronous tanpa blocking UI)
@@ -118,8 +111,9 @@ class DatabaseService {
           .select('*, content_assets(*), reminders(*)')
           .order('planned_date', { ascending: true })
           .then(({ data, error }) => {
-            if (!error && data && data.length > 0) {
-              const cleaned = this.deduplicatePlans(data);
+            if (!error && data) {
+              const withoutDemo = (data || []).filter(p => !isDemoPlan(p));
+              const cleaned = this.deduplicatePlans(withoutDemo);
               state.set('contentPlans', cleaned);
               localStorage.setItem('calendey_plans_cache', JSON.stringify(cleaned));
             }
