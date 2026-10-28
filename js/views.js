@@ -50,7 +50,7 @@ class ViewManager {
     const subtitleEl = document.getElementById('topbarPageSubtitle');
 
     if (viewName === 'calendar') {
-      if (titleEl) titleEl.textContent = 'Kalender Nasional';
+      if (titleEl) titleEl.textContent = 'Kalender';
       if (subtitleEl) subtitleEl.textContent = 'Jadwal hari besar nasional Indonesia & agenda konten';
       calendar.render();
     } else if (viewName === 'planner') {

@@ -190,7 +190,6 @@ class CalendeyApp {
 
     // Dropdown Action Items
     const btnMenuEditProfile = document.getElementById('btnMenuEditProfile');
-    const btnMenuSupabase = document.getElementById('btnMenuSupabase');
     const btnMenuAdminPanel = document.getElementById('btnMenuAdminPanel');
     const btnMenuLogout = document.getElementById('btnMenuLogout');
 
@@ -198,13 +197,6 @@ class CalendeyApp {
       btnMenuEditProfile.addEventListener('click', () => {
         if (profileDropdown) profileDropdown.classList.remove('open');
         modals.openSettingsModal();
-      });
-    }
-
-    if (btnMenuSupabase) {
-      btnMenuSupabase.addEventListener('click', () => {
-        if (profileDropdown) profileDropdown.classList.remove('open');
-        modals.openSupabaseSettingsModal();
       });
     }
 

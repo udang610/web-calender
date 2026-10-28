@@ -126,13 +126,40 @@ class DatabaseService {
       }
 
       state.set('contentPlans', updatedPlans);
-      localStorage.setItem('calendey_plans_cache', JSON.stringify(updatedPlans));
+      
+      try {
+        localStorage.setItem('calendey_plans_cache', JSON.stringify(updatedPlans));
+      } catch (storageErr) {
+        console.warn('[Calendey DB] LocalStorage quota reached, saving lightweight plan metadata:', storageErr);
+        try {
+          const lightweight = updatedPlans.map(p => ({
+            ...p,
+            content_assets: (p.content_assets || []).map(a => ({
+              id: a.id,
+              file_name: a.file_name,
+              mime_type: a.mime_type,
+              file_size: a.file_size,
+              storage_path: a.storage_path?.length > 150 ? a.storage_path.slice(0, 80) : a.storage_path
+            }))
+          }));
+          localStorage.setItem('calendey_plans_cache', JSON.stringify(lightweight));
+        } catch (e2) {
+          console.warn('[Calendey DB] Stored in active runtime state:', e2);
+        }
+      }
 
+      // Sinkronkan ke cloud secara asynchronous tanpa blocking
       if (this.isCloudConnected && state.get('user')) {
-        const payload = { ...finalPlan };
-        delete payload.content_assets;
-        delete payload.reminders;
-        this.client.from('content_plans').upsert(payload).catch(() => {});
+        try {
+          const payload = { ...finalPlan };
+          delete payload.content_assets;
+          delete payload.reminders;
+          this.client.from('content_plans').upsert(payload).then(() => {}).catch(err => {
+            console.warn('[Calendey DB] Cloud upsert skipped:', err);
+          });
+        } catch (cloudErr) {
+          console.warn('[Calendey DB] Cloud sync ignored:', cloudErr);
+        }
       }
 
       notify.success(isEdit ? 'Rencana konten berhasil diperbarui!' : 'Rencana konten baru berhasil dibuat!');
@@ -140,7 +167,7 @@ class DatabaseService {
     } catch (err) {
       console.error('[Calendey DB] Gagal menyimpan rencana konten:', err);
       notify.error('Gagal menyimpan data rencana konten');
-      throw err;
+      return null;
     }
   }
 

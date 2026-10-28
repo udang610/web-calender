@@ -24,11 +24,41 @@ class UploadService {
     return true;
   }
 
-  readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
+  compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.72) {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(reader.error);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Kompresi ke format JPEG 0.72 agar ukuran berkurang 95%+ tanpa pecah di layar
+          const compressed = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressed);
+        };
+        img.onerror = () => resolve(e.target.result);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(null);
       reader.readAsDataURL(file);
     });
   }
@@ -41,17 +71,19 @@ class UploadService {
       if (!this.validateFile(file)) continue;
 
       try {
-        const dataUrl = await this.readFileAsDataURL(file);
-        validAssets.push({
-          id: 'asset-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-          file_name: file.name,
-          mime_type: file.type,
-          file_size: file.size,
-          storage_path: dataUrl, // Local data URL atau remote path
-          created_at: new Date().toISOString()
-        });
+        const compressedDataUrl = await this.compressImage(file);
+        if (compressedDataUrl) {
+          validAssets.push({
+            id: 'asset-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+            file_name: file.name,
+            mime_type: 'image/jpeg',
+            file_size: Math.round(compressedDataUrl.length * 0.75),
+            storage_path: compressedDataUrl, // Lightweight compressed data URL
+            created_at: new Date().toISOString()
+          });
+        }
       } catch (err) {
-        console.error('Gagal membaca file:', err);
+        console.error('Gagal memproses file:', err);
       }
     }
 

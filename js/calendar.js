@@ -263,14 +263,20 @@ class CalendarEngine {
     }
 
     panelEl.innerHTML = `
-      <div class="detail-header-date">
+      <div class="detail-header-date" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
         <div>
-          <h3>${dayName}, ${d} ${monthName} ${y}</h3>
-          <p style="font-size: 0.78rem; color: var(--text-muted);">Agenda & Hari Nasional</p>
+          <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text);">${dayName}, ${d} ${monthName} ${y}</h3>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0;">Agenda & Hari Nasional</p>
         </div>
+        <button type="button" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; white-space: nowrap;" onclick="window.calendeyOpenNewPlanOnDate('${selectedDate}', ${eventsOnDay[0]?.id || 'null'})" title="Buat rencana konten di tanggal ini">
+          <i class="ph-bold ph-plus"></i> Konten
+        </button>
       </div>
       ${eventsHtml}
       ${plansHtml}
+      <button type="button" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 14px; padding: 10px; font-weight: 700;" onclick="window.calendeyOpenNewPlanOnDate('${selectedDate}', ${eventsOnDay[0]?.id || 'null'})">
+        <i class="ph-bold ph-plus-circle"></i> Buat Konten di Tanggal Ini
+      </button>
     `;
   }
 

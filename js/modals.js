@@ -142,6 +142,35 @@ class ModalManager {
             <label class="form-label">Catatan Tim / Brief</label>
             <textarea id="modalPlanNotes" class="form-textarea" style="min-height: 60px;" placeholder="Catatan internal atau referensi visual...">${initialData.notes || ''}</textarea>
           </div>
+
+          <!-- Pengingat WhatsApp Langsung Per Rencana Konten -->
+          <div class="form-group" style="padding: 12px 14px; background: var(--bg-subtle); border: 1px solid var(--surface-border); border-radius: var(--radius-md);">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <label class="form-label" style="margin: 0; display: flex; align-items: center; gap: 6px; font-weight: 700;">
+                <i class="ph-bold ph-whatsapp-logo" style="color: #25d366; font-size: 1.15rem;"></i>
+                Pengingat WhatsApp
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">
+                <input type="checkbox" id="modalPlanRemindEnabled" ${initialData.reminder_enabled !== false ? 'checked' : ''}>
+                <span>Aktifkan</span>
+              </label>
+            </div>
+            <div id="modalReminderSettings" style="display: ${initialData.reminder_enabled !== false ? 'grid' : 'none'}; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+              <div>
+                <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; display: block;">Waktu Pengingat</label>
+                <select id="modalPlanRemindTiming" class="form-select" style="font-size: 0.8rem; padding: 6px 10px;">
+                  <option value="1" ${initialData.remind_offset_days == 1 ? 'selected' : ''}>H-1 (Satu Hari Sebelum)</option>
+                  <option value="0" ${initialData.remind_offset_days == 0 ? 'selected' : ''}>Hari-H (Di Hari Pelaksanaan)</option>
+                  <option value="3" ${initialData.remind_offset_days == 3 ? 'selected' : ''}>H-3 (Tiga Hari Sebelum)</option>
+                  <option value="7" ${initialData.remind_offset_days == 7 ? 'selected' : ''}>H-7 (Satu Minggu Sebelum)</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; display: block;">Jam Kirim Pesan</label>
+                <input type="time" id="modalPlanRemindTime" class="form-input" style="font-size: 0.8rem; padding: 6px 10px;" value="${initialData.remind_time || '09:00'}">
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           ${isEdit ? `<button type="button" class="btn-secondary" style="color: var(--danger); border-color: var(--danger-subtle);" onclick="window.calendeyDeletePlan('${initialData.id}')">Hapus Konten</button>` : ''}
@@ -207,6 +236,15 @@ class ModalManager {
       });
     }
 
+    // Toggle reminder options
+    const remindCheck = document.getElementById('modalPlanRemindEnabled');
+    const remindBox = document.getElementById('modalReminderSettings');
+    if (remindCheck && remindBox) {
+      remindCheck.addEventListener('change', () => {
+        remindBox.style.display = remindCheck.checked ? 'grid' : 'none';
+      });
+    }
+
     // Save Action
     const saveBtn = document.getElementById('modalBtnSavePlan');
     if (saveBtn) {
@@ -218,6 +256,9 @@ class ModalManager {
         const status = document.getElementById('modalPlanStatus').value;
         const caption = document.getElementById('modalPlanCaption').value.trim();
         const notes = document.getElementById('modalPlanNotes').value.trim();
+        const reminderEnabled = document.getElementById('modalPlanRemindEnabled')?.checked ?? true;
+        const remindOffsetDays = parseInt(document.getElementById('modalPlanRemindTiming')?.value || '1');
+        const remindTime = document.getElementById('modalPlanRemindTime')?.value || '09:00';
 
         if (!title) {
           notify.error('Judul konten wajib diisi');
@@ -238,6 +279,9 @@ class ModalManager {
           platforms: this.selectedPlatforms,
           caption,
           notes,
+          reminder_enabled: reminderEnabled,
+          remind_offset_days: remindOffsetDays,
+          remind_time: remindTime,
           content_assets: this.tempUploadedAssets
         };
 
@@ -818,6 +862,12 @@ window.calendeyRemoveAsset = (idx) => {
 window.calendeyOpenPlanDetail = (planId) => {
   const plan = (state.get('contentPlans') || []).find(p => p.id === planId);
   if (plan) modals.openContentForm(plan);
+};
+window.calendeyOpenNewPlanOnDate = (dateStr, nationalDayId) => {
+  modals.openContentForm({
+    planned_date: dateStr,
+    national_day_id: nationalDayId || null
+  });
 };
 window.calendeyDeletePlan = async (planId) => {
   if (confirm('Apakah Anda yakin ingin menghapus rencana konten ini?')) {
