@@ -165,16 +165,57 @@ class ViewManager {
               <span>Kirim pengingat otomatis ke WhatsApp</span>
             </label>
           </div>
-          <div style="margin-top: 10px;">
-            <button class="btn-primary" id="btnSavePageSettings"><i class="ph-bold ph-floppy-disk"></i> Simpan Pengaturan</button>
+          <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn-primary" id="btnSavePageSettings" style="flex: 1; justify-content: center;">
+              <i class="ph-bold ph-floppy-disk"></i> Simpan Pengaturan
+            </button>
+            <button type="button" class="btn-secondary" id="btnTestPageSettingsWA" style="flex: 1; justify-content: center; color: #16a34a; border-color: rgba(37, 211, 102, 0.4);">
+              <i class="ph-bold ph-whatsapp-logo"></i> Tes Kirim Pesan WA
+            </button>
           </div>
         </div>
       </div>
     `;
 
-    document.getElementById('btnSavePageSettings').addEventListener('click', () => {
-      modals.openSettingsModal();
-    });
+    const saveBtn = document.getElementById('btnSavePageSettings');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async () => {
+        const full_name = document.getElementById('pageSettingsName')?.value.trim();
+        const whatsapp_number = document.getElementById('pageSettingsWA')?.value.trim();
+        const default_remind_offset_days = parseInt(document.getElementById('pageSettingsOffset')?.value || '1', 10);
+        const default_remind_time = document.getElementById('pageSettingsTime')?.value || '09:00';
+        const reminders_enabled = document.getElementById('pageSettingsEnableWA')?.checked ?? true;
+
+        if (whatsapp_number && !/^62[0-9]{8,13}$/.test(whatsapp_number)) {
+          notify.error('Nomor WhatsApp harus diawali kode 62 (contoh: 6281234567890)');
+          return;
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Menyimpan...';
+
+        await auth.updateProfile({
+          full_name,
+          whatsapp_number,
+          default_remind_offset_days,
+          default_remind_time,
+          reminders_enabled
+        });
+
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="ph-bold ph-floppy-disk"></i> Simpan Pengaturan';
+      });
+    }
+
+    const testBtn = document.getElementById('btnTestPageSettingsWA');
+    if (testBtn) {
+      testBtn.addEventListener('click', () => {
+        const wa = document.getElementById('pageSettingsWA')?.value.trim();
+        if (typeof window.calendeyTestWhatsAppNotification === 'function') {
+          window.calendeyTestWhatsAppNotification(wa);
+        }
+      });
+    }
   }
 }
 

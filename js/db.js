@@ -103,7 +103,19 @@ class DatabaseService {
   async saveContentPlan(planData) {
     try {
       const plans = state.get('contentPlans') || [];
-      const isEdit = Boolean(planData.id);
+      const isEdit = Boolean(planData.id && !String(planData.id).startsWith('plan-'));
+      
+      const generateUUID = () => {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+          return crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = Math.random() * 16 | 0;
+          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      };
+
       let updatedPlans;
       let finalPlan;
 
@@ -115,9 +127,10 @@ class DatabaseService {
         };
         updatedPlans = plans.map(p => p.id === planData.id ? finalPlan : p);
       } else {
+        const newId = planData.id && !String(planData.id).startsWith('plan-') ? planData.id : generateUUID();
         finalPlan = {
           ...planData,
-          id: 'plan-' + Date.now(),
+          id: newId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           content_assets: planData.content_assets || []
@@ -148,14 +161,85 @@ class DatabaseService {
         }
       }
 
-      // Sinkronkan ke cloud secara asynchronous tanpa blocking
-      if (this.isCloudConnected && state.get('user')) {
+      // Sinkronkan ke Supabase Cloud (content_plans & reminders)
+      const user = state.get('user');
+      if (this.isCloudConnected && user && user.id) {
         try {
-          const payload = { ...finalPlan };
-          delete payload.content_assets;
-          delete payload.reminders;
-          this.client.from('content_plans').upsert(payload).then(() => {}).catch(err => {
-            console.warn('[Calendey DB] Cloud upsert skipped:', err);
+          const planPayload = {
+            id: finalPlan.id,
+            user_id: user.id,
+            title: finalPlan.title,
+            caption: finalPlan.caption || null,
+            notes: finalPlan.notes || null,
+            platforms: finalPlan.platforms || [],
+            planned_date: finalPlan.planned_date,
+            scheduled_at: finalPlan.scheduled_at || null,
+            status: finalPlan.status || 'idea',
+            design_done: Boolean(finalPlan.design_done),
+            is_posted: Boolean(finalPlan.is_posted),
+            posted_at: finalPlan.posted_at || null,
+            national_day_id: finalPlan.national_day_id || null,
+            updated_at: new Date().toISOString()
+          };
+
+          this.client.from('content_plans').upsert(planPayload).then(async ({ error: planErr }) => {
+            if (planErr) {
+              console.warn('[Calendey DB] Upsert content_plan notice:', planErr);
+              return;
+            }
+
+            // Otomatisasi Jadwal Reminder WhatsApp ke tabel public.reminders
+            const isReminderActive = finalPlan.reminder_enabled !== false;
+            const isPosted = finalPlan.is_posted === true || finalPlan.status === 'posted';
+
+            if (isReminderActive && !isPosted && finalPlan.planned_date) {
+              const offsetDays = parseInt(finalPlan.remind_offset_days ?? user.default_remind_offset_days ?? 1, 10);
+              const targetDate = new Date(finalPlan.planned_date + 'T00:00:00');
+              targetDate.setDate(targetDate.getDate() - offsetDays);
+
+              const timeStr = finalPlan.remind_time || user.default_remind_time || '09:00';
+              const [hh, mm] = timeStr.split(':');
+              const yyyy = targetDate.getFullYear();
+              const monthStr = String(targetDate.getMonth() + 1).padStart(2, '0');
+              const dayStr = String(targetDate.getDate()).padStart(2, '0');
+              const hourStr = String(hh || '09').padStart(2, '0');
+              const minuteStr = String(mm || '00').padStart(2, '0');
+              const remindAtIso = `${yyyy}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:00+07:00`;
+
+              const { data: existingReminders } = await this.client
+                .from('reminders')
+                .select('id')
+                .eq('content_plan_id', finalPlan.id)
+                .limit(1);
+
+              const reminderData = {
+                content_plan_id: finalPlan.id,
+                user_id: user.id,
+                remind_at: remindAtIso,
+                channel: 'whatsapp',
+                status: 'pending'
+              };
+
+              if (existingReminders && existingReminders.length > 0) {
+                await this.client
+                  .from('reminders')
+                  .update(reminderData)
+                  .eq('id', existingReminders[0].id);
+              } else {
+                await this.client
+                  .from('reminders')
+                  .insert(reminderData);
+              }
+              console.log('[Calendey DB] Pengingat otomatis WA berhasil dijadwalkan:', remindAtIso);
+            } else if (!isReminderActive || isPosted) {
+              // Jika pengingat dinonaktifkan atau konten sudah posted, set status cancelled
+              await this.client
+                .from('reminders')
+                .update({ status: 'cancelled' })
+                .eq('content_plan_id', finalPlan.id);
+            }
+          }).catch(err => {
+            console.warn('[Calendey DB] Cloud plan sync error:', err);
           });
         } catch (cloudErr) {
           console.warn('[Calendey DB] Cloud sync ignored:', cloudErr);
@@ -179,6 +263,7 @@ class DatabaseService {
       localStorage.setItem('calendey_plans_cache', JSON.stringify(filtered));
 
       if (this.isCloudConnected && state.get('user')) {
+        this.client.from('reminders').delete().eq('content_plan_id', planId).catch(() => {});
         this.client.from('content_plans').delete().eq('id', planId).catch(() => {});
       }
 

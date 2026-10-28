@@ -170,6 +170,13 @@ class ModalManager {
                 <input type="time" id="modalPlanRemindTime" class="form-input" style="font-size: 0.8rem; padding: 6px 10px;" value="${initialData.remind_time || '09:00'}">
               </div>
             </div>
+            ${initialData.id ? `
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--surface-border); display: flex; justify-content: flex-end;">
+              <button type="button" class="btn-secondary" style="font-size: 0.75rem; padding: 4px 10px; color: #16a34a; border-color: rgba(37, 211, 102, 0.4);" onclick="window.calendeySendWhatsAppReminder('${initialData.id}')">
+                <i class="ph-bold ph-paper-plane-tilt"></i> Kirim Pesan Pengingat WA Sekarang
+              </button>
+            </div>
+            ` : ''}
           </div>
         </div>
         <div class="modal-footer">
@@ -873,3 +880,78 @@ window.calendeyDeletePlan = async (planId) => {
     modals.close();
   }
 };
+
+window.calendeySendWhatsAppReminder = (planId) => {
+  const plans = state.get('contentPlans') || [];
+  const plan = plans.find(p => p.id === planId);
+  if (!plan) {
+    notify.error('Rencana konten tidak ditemukan');
+    return;
+  }
+
+  const user = state.get('user') || {};
+  let phone = user.whatsapp_number ? String(user.whatsapp_number).replace(/[^0-9]/g, '') : '';
+  if (!phone) {
+    phone = prompt('Masukkan nomor WhatsApp tujuan pengingat (contoh: 6281234567890):', '628');
+    if (!phone) return;
+    phone = phone.replace(/[^0-9]/g, '');
+    if (!phone.startsWith('62')) {
+      if (phone.startsWith('0')) phone = '62' + phone.substring(1);
+      else phone = '62' + phone;
+    }
+  }
+
+  const nationalDays = state.get('nationalDays') || [];
+  const natDay = plan.national_day_id ? nationalDays.find(n => n.id === plan.national_day_id) : null;
+  const natDayName = natDay ? natDay.name : 'Hari Nasional';
+  const userName = user.full_name || 'Sahabat Calendey';
+  const statusLabel = plan.status ? plan.status.toUpperCase() : 'IDEA';
+  const targetDate = plan.planned_date || new Date().toISOString().split('T')[0];
+  const targetTime = plan.scheduled_at
+    ? new Date(plan.scheduled_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    : (plan.remind_time || '09:00');
+
+  const message = `Halo ${userName}! 🇮🇩\n\n` +
+    `*PENGINGAT JADWAL KONTEN CALENDEY*\n` +
+    `--------------------------------\n` +
+    `📌 *Momen:* ${natDayName}\n` +
+    `📝 *Judul Konten:* ${plan.title}\n` +
+    `🗓 *Target Tayang:* ${targetDate} (${targetTime} WIB)\n` +
+    `⚡ *Status Konten:* ${statusLabel}\n` +
+    (plan.caption ? `💬 *Draft Caption:*\n"${plan.caption.length > 100 ? plan.caption.slice(0, 100) + '...' : plan.caption}"\n` : '') +
+    (plan.notes ? `💡 *Catatan Tim:* ${plan.notes}\n` : '') +
+    `--------------------------------\n` +
+    `Pastikan desain poster dan materi grafis sudah final ya! ✨\n\n` +
+    `_Notifikasi Pengingat Otomatis Calendey_`;
+
+  const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
+  window.open(waUrl, '_blank');
+  notify.success(`Membuka WhatsApp untuk mengirim pengingat ke +${phone}`);
+};
+
+window.calendeyTestWhatsAppNotification = (phone) => {
+  const user = state.get('user') || {};
+  let targetPhone = phone || user.whatsapp_number || '';
+  targetPhone = String(targetPhone).replace(/[^0-9]/g, '');
+  if (!targetPhone) {
+    targetPhone = prompt('Masukkan nomor WhatsApp untuk verifikasi pengingat (contoh: 6281234567890):', '628');
+    if (!targetPhone) return;
+    targetPhone = targetPhone.replace(/[^0-9]/g, '');
+  }
+  if (!targetPhone.startsWith('62')) {
+    if (targetPhone.startsWith('0')) targetPhone = '62' + targetPhone.substring(1);
+    else targetPhone = '62' + targetPhone;
+  }
+
+  const message = `Halo ${user.full_name || 'Pengguna Calendey'}! 👋🇮🇩\n\n` +
+    `Ini adalah pesan verifikasi integrasi *Reminder Otomatis WhatsApp* dari aplikasi Calendey.\n\n` +
+    `✅ *Status Integrasi:* AKTIF & TERKONEKSI\n` +
+    `📱 *Nomor Tujuan:* +${targetPhone}\n` +
+    `⏰ *Waktu Verifikasi:* ${new Date().toLocaleString('id-ID')}\n\n` +
+    `Seluruh jadwal konten media sosial Anda akan dikirimkan notifikasinya secara berkala ke nomor ini.\n\n` +
+    `Salam,\n*Tim Calendey Indonesia*`;
+
+  window.open(`https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(message)}`, '_blank');
+  notify.success(`Membuka WhatsApp untuk verifikasi pengingat ke +${targetPhone}`);
+};
+

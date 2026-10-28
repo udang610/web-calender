@@ -26,11 +26,6 @@ serve(async (req: Request) => {
         content_plan_id,
         remind_at,
         attempts,
-        profiles:user_id (
-          full_name,
-          whatsapp_number,
-          reminders_enabled
-        ),
         content_plans:content_plan_id (
           title,
           status,
@@ -52,12 +47,20 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ message: "No pending reminders to send" }), { status: 200 });
     }
 
+    // Ambil profile pengguna secara efisien via batch query
+    const userIds = [...new Set(pendingReminders.map((r: any) => r.user_id).filter(Boolean))];
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, full_name, whatsapp_number, reminders_enabled")
+      .in("id", userIds);
+    const profileMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+
     const results = [];
 
     // 2. Iterasi dan proses pengiriman tiap reminder
     for (const reminder of pendingReminders) {
-      const profile = reminder.profiles;
-      const plan = reminder.content_plans;
+      const profile: any = profileMap.get(reminder.user_id);
+      const plan: any = reminder.content_plans;
 
       // Jika user mematikan notifikasi global
       if (!profile?.reminders_enabled) {
