@@ -473,13 +473,13 @@ class ModalManager {
           <div class="form-group">
             <label class="form-label">Pilihan Tema Tampilan</label>
             <div class="profile-theme-buttons">
-              <button type="button" class="profile-theme-btn ${state.get('theme') === 'light' ? 'active' : ''}" onclick="window.calendeySetTheme('light')">
+              <button type="button" class="profile-theme-btn ${state.get('theme') === 'light' ? 'active' : ''}" data-set-theme="light" onclick="window.calendeySetTheme('light')">
                 <i class="ph-bold ph-sun"></i> Light
               </button>
-              <button type="button" class="profile-theme-btn ${state.get('theme') === 'dark' ? 'active' : ''}" onclick="window.calendeySetTheme('dark')">
+              <button type="button" class="profile-theme-btn ${state.get('theme') === 'dark' ? 'active' : ''}" data-set-theme="dark" onclick="window.calendeySetTheme('dark')">
                 <i class="ph-bold ph-moon"></i> Dark
               </button>
-              <button type="button" class="profile-theme-btn ${state.get('theme') === 'pink' ? 'active' : ''}" onclick="window.calendeySetTheme('pink')">
+              <button type="button" class="profile-theme-btn ${state.get('theme') === 'pink' ? 'active' : ''}" data-set-theme="pink" onclick="window.calendeySetTheme('pink')">
                 <i class="ph-bold ph-heart"></i> Soft Pink
               </button>
             </div>
@@ -812,13 +812,31 @@ window.calendeyLogout = async () => {
   await auth.signOut();
   modals.close();
 };
-window.calendeySetTheme = (themeName) => {
+window.calendeySetTheme = async (themeName) => {
+  if (!['light', 'dark', 'pink'].includes(themeName)) return;
+
   state.set('theme', themeName);
   document.documentElement.setAttribute('data-theme', themeName);
-  document.querySelectorAll('.profile-theme-btn').forEach(b => {
-    if (b.getAttribute('data-set-theme') === themeName) b.classList.add('active');
-    else b.classList.remove('active');
-  });
+
+  // 1. Sinkronkan tampilan semua tombol tema di UI (dropdown & modal)
+  if (typeof window.calendeySyncThemeButtons === 'function') {
+    window.calendeySyncThemeButtons(themeName);
+  } else {
+    document.querySelectorAll('.profile-theme-btn, [data-set-theme]').forEach(b => {
+      if (b.getAttribute('data-set-theme') === themeName) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+  }
+
+  // 2. Simpan perubahan tema ke database Supabase Cloud
+  try {
+    if (auth && typeof auth.updateProfile === 'function') {
+      await auth.updateProfile({ theme: themeName }, false);
+    }
+  } catch (err) {
+    console.warn('[Calendey] Gagal update tema ke Supabase:', err);
+  }
+
   notify.info(`Tema diubah ke ${themeName.toUpperCase()}`);
 };
 window.calendeyDeleteAccount = (idx) => {

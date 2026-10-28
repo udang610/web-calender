@@ -20,6 +20,7 @@ class CalendeyApp {
     // 1. Setup Theme dari State
     const savedTheme = state.get('theme') || CONFIG.DEFAULT_THEME;
     document.documentElement.setAttribute('data-theme', savedTheme);
+    window.calendeySyncThemeButtons = (theme) => this.syncThemeButtons(theme);
     this.syncThemeButtons(savedTheme);
 
     // 2. Inisialisasi Service Worker (PWA)
@@ -58,8 +59,10 @@ class CalendeyApp {
   }
 
   syncThemeButtons(activeTheme) {
-    document.querySelectorAll('.theme-btn').forEach(btn => {
-      if (btn.getAttribute('data-set-theme') === activeTheme) {
+    const currentTheme = activeTheme || state.get('theme') || CONFIG.DEFAULT_THEME;
+    document.querySelectorAll('.profile-theme-btn, [data-set-theme]').forEach(btn => {
+      const btnTheme = btn.getAttribute('data-set-theme');
+      if (btnTheme === currentTheme) {
         btn.classList.add('active');
       } else {
         btn.classList.remove('active');
@@ -100,6 +103,9 @@ class CalendeyApp {
     if (navNameEl) navNameEl.textContent = name;
     if (menuNameEl) menuNameEl.textContent = name;
     if (menuWaEl) menuWaEl.textContent = wa;
+
+    // Sinkronkan tombol tema sesuai preferensi user
+    this.syncThemeButtons(state.get('theme'));
   }
 
   bindEvents() {

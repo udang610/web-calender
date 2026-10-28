@@ -38,6 +38,7 @@ export const DEFAULT_ACCOUNTS = [
 
 class AuthService {
   constructor() {
+    window.auth = this;
     this.init();
   }
 
@@ -126,6 +127,11 @@ class AuthService {
         const profile = { ...data, email: email || data.email };
         state.set('user', profile);
         localStorage.setItem('calendey_user_profile', JSON.stringify(profile));
+        if (data.theme) {
+          state.set('theme', data.theme);
+          document.documentElement.setAttribute('data-theme', data.theme);
+          window.calendeySyncThemeButtons?.(data.theme);
+        }
       }
     } catch (err) {
       console.error('[Calendey Auth] Gagal memuat profil:', err);
@@ -288,7 +294,7 @@ class AuthService {
     }
   }
 
-  async updateProfile(updates) {
+  async updateProfile(updates, showToast = true) {
     try {
       const currentUser = state.get('user') || {};
       const updatedUser = { ...currentUser, ...updates };
@@ -333,7 +339,7 @@ class AuthService {
 
             const { error: profErr } = await db.client.from('profiles').upsert(profilePayload);
             if (!profErr) {
-              console.log('[Calendey Auth] Profile & WhatsApp tersimpan ke Supabase Database dengan UUID:', validUUID);
+              console.log('[Calendey Auth] Profile tersimpan ke Supabase Database:', profilePayload);
             } else {
               console.warn('[Calendey Auth] Supabase profiles upsert info:', profErr);
             }
@@ -343,10 +349,12 @@ class AuthService {
         }
       }
 
-      notify.success('Pengaturan profil & nomor WhatsApp berhasil disimpan!');
+      if (showToast) {
+        notify.success('Pengaturan profil & nomor WhatsApp berhasil disimpan!');
+      }
     } catch (err) {
       console.error('[Calendey Auth] Gagal update profil:', err);
-      notify.error('Gagal memperbarui profil');
+      if (showToast) notify.error('Gagal memperbarui profil');
     }
   }
 }
