@@ -17,8 +17,9 @@ class CalendeyApp {
   async init() {
     console.log(`[Calendey] Initializing ${CONFIG.APP_NAME} v${CONFIG.APP_VERSION}...`);
 
-    // 1. Setup Theme dari State
-    const savedTheme = state.get('theme') || CONFIG.DEFAULT_THEME;
+    // 1. Setup Theme dari LocalStorage & State
+    const savedTheme = localStorage.getItem('calendey_theme') || state.get('theme') || CONFIG.DEFAULT_THEME;
+    state.set('theme', savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
     window.calendeySyncThemeButtons = (theme) => this.syncThemeButtons(theme);
     this.syncThemeButtons(savedTheme);

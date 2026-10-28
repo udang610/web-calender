@@ -165,17 +165,14 @@ class ViewManager {
               <span>Kirim pengingat otomatis ke WhatsApp</span>
             </label>
           </div>
-          <div class="form-group" style="padding: 14px; background: var(--bg-subtle); border-radius: var(--radius-md); border: 1px solid var(--surface-border);">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-              <label class="form-label" style="margin: 0; font-weight: 700;">
-                <i class="ph-bold ph-broadcast" style="color: #10b981; margin-right: 4px;"></i> Token Gateway WA Server (Fonnte API)
-              </label>
-              <span style="font-size: 0.72rem; color: #10b981; font-weight: 700; background: rgba(16, 185, 129, 0.12); padding: 2px 8px; border-radius: 4px;">Opsional Otomatis</span>
+          <div class="form-group" style="padding: 14px; background: rgba(37, 211, 102, 0.08); border-radius: var(--radius-md); border: 1px solid rgba(37, 211, 102, 0.25);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <i class="ph-bold ph-whatsapp-logo" style="color: #25d366; font-size: 1.25rem;"></i>
+              <span style="font-weight: 700; font-size: 0.88rem; color: var(--text);">Integrasi Langsung WhatsApp</span>
             </div>
-            <input type="password" id="pageSettingsFonnteToken" class="form-input" style="padding-left: 14px; font-family: monospace;" value="${localStorage.getItem('calendey_fonnte_token') || ''}" placeholder="Masukkan API Token Fonnte (fonnte.com)">
-            <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 5px; line-height: 1.4;">
-              Diperlukan jika Anda ingin pesan WA terkirim otomatis di latar belakang server tanpa perlu menekan tombol 'Kirim WA'. Dapatkan token gratis di <a href="https://fonnte.com" target="_blank" style="color: var(--primary); text-decoration: underline;">fonnte.com</a>.
-            </span>
+            <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; margin: 0;">
+              Pesan pengingat dikirim langsung ke aplikasi WhatsApp via link resmi <code>api.whatsapp.com/send</code>. Saat jadwal konten tiba, alarm akan muncul dan Anda cukup klik 1 tombol untuk mengirim pesan lengkap ke nomor WA Anda.
+            </p>
           </div>
 
           <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
@@ -198,7 +195,6 @@ class ViewManager {
         const default_remind_offset_days = parseInt(document.getElementById('pageSettingsOffset')?.value || '1', 10);
         const default_remind_time = document.getElementById('pageSettingsTime')?.value || '09:00';
         const reminders_enabled = document.getElementById('pageSettingsEnableWA')?.checked ?? true;
-        const fonnteToken = document.getElementById('pageSettingsFonnteToken')?.value.trim();
 
         // Normalisasi nomor HP otomatis (08xxx -> 628xxx)
         if (whatsapp_number) {
@@ -210,10 +206,6 @@ class ViewManager {
           }
           const inputEl = document.getElementById('pageSettingsWA');
           if (inputEl) inputEl.value = whatsapp_number;
-        }
-
-        if (fonnteToken !== undefined) {
-          localStorage.setItem('calendey_fonnte_token', fonnteToken);
         }
 
         saveBtn.disabled = true;

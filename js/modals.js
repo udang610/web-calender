@@ -1065,7 +1065,7 @@ window.calendeySendWhatsAppReminder = (planId) => {
     `Pastikan desain poster dan materi grafis sudah final ya! ✨\n\n` +
     `_Notifikasi Pengingat Otomatis Calendey_`;
 
-  const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
+  const waUrl = `https://api.whatsapp.com/send/?phone=${phone}&text=${encodeURIComponent(message)}&type=phone_number&app_absent=0`;
   window.open(waUrl, '_blank');
   notify.success(`Membuka WhatsApp untuk mengirim pengingat ke +${phone}`);
 };
@@ -1085,14 +1085,15 @@ window.calendeyTestWhatsAppNotification = (phone) => {
   }
 
   const message = `Halo ${user.full_name || 'Pengguna Calendey'}! 👋🇮🇩\n\n` +
-    `Ini adalah pesan verifikasi integrasi *Reminder Otomatis WhatsApp* dari aplikasi Calendey.\n\n` +
-    `✅ *Status Integrasi:* AKTIF & TERKONEKSI\n` +
+    `Ini adalah pesan verifikasi integrasi *Reminder Langsung WhatsApp* dari aplikasi Calendey.\n\n` +
+    `✅ *Status Integrasi:* AKTIF & TERKONEKSI (Direct API)\n` +
     `📱 *Nomor Tujuan:* +${targetPhone}\n` +
     `⏰ *Waktu Verifikasi:* ${new Date().toLocaleString('id-ID')}\n\n` +
-    `Seluruh jadwal konten media sosial Anda akan dikirimkan notifikasinya secara berkala ke nomor ini.\n\n` +
+    `Notifikasi jadwal konten media sosial Anda akan dikirimkan langsung ke nomor ini.\n\n` +
     `Salam,\n*Tim Calendey Indonesia*`;
 
-  window.open(`https://api.whatsapp.com/send?phone=${targetPhone}&text=${encodeURIComponent(message)}`, '_blank');
+  const testWaUrl = `https://api.whatsapp.com/send/?phone=${targetPhone}&text=${encodeURIComponent(message)}&type=phone_number&app_absent=0`;
+  window.open(testWaUrl, '_blank');
   notify.success(`Membuka WhatsApp untuk verifikasi pengingat ke +${targetPhone}`);
 };
 

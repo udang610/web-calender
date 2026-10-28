@@ -79,6 +79,13 @@ class DatabaseService {
 
   async loadContentPlans() {
     try {
+      let deletedIds = [];
+      try {
+        deletedIds = JSON.parse(localStorage.getItem('calendey_deleted_plan_ids') || '[]');
+      } catch (e) {
+        deletedIds = [];
+      }
+
       const isDemoPlan = (p) => {
         if (!p) return false;
         return p.id === 'plan-sumpah-pemuda-demo' ||
@@ -86,13 +93,19 @@ class DatabaseService {
                (typeof p.title === 'string' && p.title.toLowerCase().includes('poster hari sumpah pemuda 2026'));
       };
 
+      const isValidPlan = (p) => {
+        if (!p || !p.id) return false;
+        if (deletedIds.includes(p.id)) return false;
+        return !isDemoPlan(p);
+      };
+
       // 1. Ambil dari cache local storage secara instan
       const cached = localStorage.getItem('calendey_plans_cache');
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
-          const withoutDemo = (parsed || []).filter(p => !isDemoPlan(p));
-          const cleaned = this.deduplicatePlans(withoutDemo);
+          const validCached = (parsed || []).filter(isValidPlan);
+          const cleaned = this.deduplicatePlans(validCached);
           state.set('contentPlans', cleaned);
           localStorage.setItem('calendey_plans_cache', JSON.stringify(cleaned));
         } catch (e) {
@@ -112,8 +125,8 @@ class DatabaseService {
           .order('planned_date', { ascending: true })
           .then(({ data, error }) => {
             if (!error && data) {
-              const withoutDemo = (data || []).filter(p => !isDemoPlan(p));
-              const cleaned = this.deduplicatePlans(withoutDemo);
+              const validCloud = (data || []).filter(isValidPlan);
+              const cleaned = this.deduplicatePlans(validCloud);
               state.set('contentPlans', cleaned);
               localStorage.setItem('calendey_plans_cache', JSON.stringify(cleaned));
             }
@@ -310,7 +323,19 @@ class DatabaseService {
       state.set('contentPlans', filtered);
       localStorage.setItem('calendey_plans_cache', JSON.stringify(filtered));
 
-      if (this.isCloudConnected && state.get('user')) {
+      // Catat ID ke daftar terhapus agar tidak pernah dimuat ulang dari cache/cloud lama
+      let deletedIds = [];
+      try {
+        deletedIds = JSON.parse(localStorage.getItem('calendey_deleted_plan_ids') || '[]');
+      } catch (e) {
+        deletedIds = [];
+      }
+      if (!deletedIds.includes(planId)) {
+        deletedIds.push(planId);
+        localStorage.setItem('calendey_deleted_plan_ids', JSON.stringify(deletedIds));
+      }
+
+      if (this.isCloudConnected) {
         try {
           await this.client.from('reminders').delete().eq('content_plan_id', planId);
           await this.client.from('content_plans').delete().eq('id', planId);

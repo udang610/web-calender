@@ -15,7 +15,6 @@ export const DEFAULT_ACCOUNTS = [
     full_name: 'Superadmin',
     role: 'Admin',
     whatsapp_number: '6281219958750',
-    theme: 'light',
     reminders_enabled: true,
     default_remind_offset_days: 1,
     default_remind_time: '09:00',
@@ -28,7 +27,6 @@ export const DEFAULT_ACCOUNTS = [
     full_name: 'Dhafin Shabir Alfatih',
     role: 'User',
     whatsapp_number: '6281234567890',
-    theme: 'light',
     reminders_enabled: true,
     default_remind_offset_days: 1,
     default_remind_time: '09:00',
@@ -82,9 +80,15 @@ class AuthService {
           d.email.toLowerCase() === activeUser.email?.toLowerCase()
         );
         if (matchedDef) {
-          activeUser = { ...activeUser, ...matchedDef };
-          localStorage.setItem('calendey_user_profile', JSON.stringify(activeUser));
+          activeUser = { ...matchedDef, ...activeUser };
         }
+        // Pastikan tema yang disimpan di localStorage tidak pernah ter-reset ke light
+        const persistentTheme = localStorage.getItem('calendey_theme') || activeUser.theme || 'light';
+        activeUser.theme = persistentTheme;
+        state.set('theme', persistentTheme);
+        document.documentElement.setAttribute('data-theme', persistentTheme);
+
+        localStorage.setItem('calendey_user_profile', JSON.stringify(activeUser));
         state.set('user', activeUser);
       } catch (e) {
         state.set('user', null);
@@ -95,6 +99,44 @@ class AuthService {
 
     // Dengarkan perubahan sesi
     this.setupSessionListener();
+  }
+
+  async loadUserProfile(userId, email) {
+    if (!db.client) return;
+    try {
+      const { data, error } = await db.client
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      const persistentTheme = localStorage.getItem('calendey_theme') || data?.theme || 'light';
+      state.set('theme', persistentTheme);
+      document.documentElement.setAttribute('data-theme', persistentTheme);
+
+      if (!error && data) {
+        const currentUser = state.get('user') || {};
+        const merged = {
+          ...currentUser,
+          id: data.id,
+          full_name: data.full_name || currentUser.full_name,
+          whatsapp_number: data.whatsapp_number || currentUser.whatsapp_number,
+          theme: persistentTheme,
+          reminders_enabled: data.reminders_enabled !== false,
+          default_remind_offset_days: data.default_remind_offset_days ?? 1,
+          default_remind_time: data.default_remind_time || '09:00'
+        };
+
+        state.set('user', merged);
+        localStorage.setItem('calendey_user_profile', JSON.stringify(merged));
+      }
+
+      if (typeof window.calendeySyncThemeButtons === 'function') {
+        window.calendeySyncThemeButtons(persistentTheme);
+      }
+    } catch (e) {
+      console.warn('[Calendey Auth] Load profile note:', e);
+    }
   }
 
   async setupSessionListener() {
