@@ -471,25 +471,6 @@ class ModalManager {
           </div>
 
           <div class="form-group">
-            <label class="form-label">Jadwal Pengingat Default</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <select id="settingsOffsetDays" class="form-select">
-                <option value="0" ${user.default_remind_offset_days === 0 ? 'selected' : ''}>Hari-H Posting</option>
-                <option value="1" ${user.default_remind_offset_days === 1 || user.default_remind_offset_days === undefined ? 'selected' : ''}>H-1 Sebelum Posting</option>
-                <option value="3" ${user.default_remind_offset_days === 3 ? 'selected' : ''}>H-3 Sebelum Posting</option>
-              </select>
-              <input type="time" id="settingsDefaultTime" class="form-input" style="padding-left: 14px;" value="${user.default_remind_time || '09:00'}">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="checklist-label" style="margin-top: 6px; padding: 10px; background: var(--bg-subtle); border-radius: var(--radius-md);">
-              <input type="checkbox" id="settingsRemindersEnabled" class="checklist-checkbox" ${user.reminders_enabled !== false ? 'checked' : ''}>
-              <span>Kirimkan pengingat otomatis ke WhatsApp</span>
-            </label>
-          </div>
-
-          <div class="form-group">
             <label class="form-label">Pilihan Tema Tampilan</label>
             <div class="profile-theme-buttons">
               <button type="button" class="profile-theme-btn ${state.get('theme') === 'light' ? 'active' : ''}" onclick="window.calendeySetTheme('light')">
@@ -536,9 +517,11 @@ class ModalManager {
     document.getElementById('btnSaveSettings').addEventListener('click', async () => {
       const full_name = document.getElementById('settingsFullName').value.trim();
       const whatsapp_number = document.getElementById('settingsWhatsapp').value.trim();
-      const default_remind_offset_days = parseInt(document.getElementById('settingsOffsetDays').value);
-      const default_remind_time = document.getElementById('settingsDefaultTime').value;
-      const reminders_enabled = document.getElementById('settingsRemindersEnabled').checked;
+
+      if (!full_name) {
+        notify.error('Nama pengguna wajib diisi');
+        return;
+      }
 
       // Regex validasi nomor WA
       if (whatsapp_number && !/^62[0-9]{8,13}$/.test(whatsapp_number)) {
@@ -548,10 +531,7 @@ class ModalManager {
 
       await auth.updateProfile({
         full_name,
-        whatsapp_number,
-        default_remind_offset_days,
-        default_remind_time,
-        reminders_enabled
+        whatsapp_number
       });
 
       this.close();

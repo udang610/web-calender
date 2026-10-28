@@ -229,17 +229,44 @@ class AuthService {
       let accounts = [];
       try {
         accounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
-        const idx = accounts.findIndex(a => a.id === updatedUser.id || a.email === updatedUser.email);
+        const idx = accounts.findIndex(a => 
+          (a.id && a.id === updatedUser.id) ||
+          (a.username && a.username.toLowerCase() === (updatedUser.username || '').toLowerCase()) ||
+          (a.email && a.email.toLowerCase() === (updatedUser.email || '').toLowerCase())
+        );
         if (idx !== -1) {
-          accounts[idx] = updatedUser;
-          localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
+          accounts[idx] = { ...accounts[idx], ...updatedUser };
+        } else {
+          accounts.push(updatedUser);
         }
+        localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
       } catch (e) { }
 
+      // Simpan langsung ke Supabase Database Cloud
       if (db.client && updatedUser.id) {
-        const payload = { ...updatedUser };
-        delete payload.password;
-        this.client?.from('profiles').upsert(payload).catch(() => {});
+        try {
+          const profilePayload = {
+            id: updatedUser.id,
+            full_name: updatedUser.full_name,
+            whatsapp_number: updatedUser.whatsapp_number,
+            updated_at: new Date().toISOString()
+          };
+          db.client.from('profiles').upsert(profilePayload).then(({ error }) => {
+            if (!error) console.log('[Calendey Auth] Profile & WhatsApp tersimpan ke Supabase Database');
+            else console.warn('[Calendey Auth] Supabase profiles upsert info:', error);
+          }).catch(() => {});
+
+          if (db.client.auth) {
+            db.client.auth.updateUser({
+              data: {
+                full_name: updatedUser.full_name,
+                whatsapp_number: updatedUser.whatsapp_number
+              }
+            }).catch(() => {});
+          }
+        } catch (dbErr) {
+          console.warn('[Calendey Auth] Cloud sync warning:', dbErr);
+        }
       }
 
       notify.success('Pengaturan profil & nomor WhatsApp berhasil disimpan!');
