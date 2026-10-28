@@ -54,16 +54,46 @@ class DatabaseService {
     }
   }
 
+  deduplicatePlans(items) {
+    if (!Array.isArray(items)) return [];
+    const seenIds = new Set();
+    const seenTitleDate = new Set();
+    const unique = [];
+
+    for (const item of items) {
+      if (!item) continue;
+      const id = String(item.id || '').trim();
+      const title = String(item.title || '').trim().toLowerCase();
+      const date = String(item.planned_date || '').trim();
+      const key = `${title}:::${date}`;
+
+      if (id && seenIds.has(id)) continue;
+      if (title && date && seenTitleDate.has(key)) continue;
+
+      if (id) seenIds.add(id);
+      if (title && date) seenTitleDate.add(key);
+      unique.push(item);
+    }
+    return unique;
+  }
+
   async loadContentPlans() {
     try {
       // 1. Ambil dari cache local storage secara instan
       const cached = localStorage.getItem('calendey_plans_cache');
       if (cached) {
-        state.set('contentPlans', JSON.parse(cached));
+        try {
+          const parsed = JSON.parse(cached);
+          const cleaned = this.deduplicatePlans(parsed);
+          state.set('contentPlans', cleaned);
+          localStorage.setItem('calendey_plans_cache', JSON.stringify(cleaned));
+        } catch (e) {
+          console.warn('[Calendey DB] Parse cache error:', e);
+        }
       } else {
         const samplePlans = [
           {
-            id: 'plan-sumpah-pemuda-demo',
+            id: 'c7e8d644-8d99-4c91-b3b4-56789abcdef0',
             title: 'Poster Hari Sumpah Pemuda 2026',
             national_day_id: 27,
             planned_date: '2026-10-28',
@@ -89,8 +119,9 @@ class DatabaseService {
           .order('planned_date', { ascending: true })
           .then(({ data, error }) => {
             if (!error && data && data.length > 0) {
-              state.set('contentPlans', data);
-              localStorage.setItem('calendey_plans_cache', JSON.stringify(data));
+              const cleaned = this.deduplicatePlans(data);
+              state.set('contentPlans', cleaned);
+              localStorage.setItem('calendey_plans_cache', JSON.stringify(cleaned));
             }
           })
           .catch(() => {});
@@ -100,11 +131,10 @@ class DatabaseService {
     }
   }
 
-  async saveContentPlan(planData) {
+  async saveContentPlan(planData, isToggle = false) {
     try {
       const plans = state.get('contentPlans') || [];
-      const isEdit = Boolean(planData.id && !String(planData.id).startsWith('plan-'));
-      
+
       const generateUUID = () => {
         if (typeof crypto !== 'undefined' && crypto.randomUUID) {
           return crypto.randomUUID();
@@ -116,16 +146,34 @@ class DatabaseService {
         });
       };
 
+      // Cari index rencana yang ada berdasarkan id ATAU kesamaan judul & tanggal pelaksanaan
+      const existingIndex = plans.findIndex(p => {
+        if (planData.id && p.id === planData.id) return true;
+        if (p.title && planData.title && p.planned_date && planData.planned_date) {
+          return p.title.trim().toLowerCase() === planData.title.trim().toLowerCase() &&
+                 p.planned_date === planData.planned_date;
+        }
+        return false;
+      });
+
+      const isEdit = existingIndex !== -1;
       let updatedPlans;
       let finalPlan;
 
       if (isEdit) {
+        const existing = plans[existingIndex];
+        const validId = (existing.id && !String(existing.id).startsWith('plan-'))
+          ? existing.id
+          : (planData.id && !String(planData.id).startsWith('plan-') ? planData.id : generateUUID());
+
         finalPlan = {
-          ...plans.find(p => p.id === planData.id),
+          ...existing,
           ...planData,
+          id: validId,
           updated_at: new Date().toISOString()
         };
-        updatedPlans = plans.map(p => p.id === planData.id ? finalPlan : p);
+        updatedPlans = [...plans];
+        updatedPlans[existingIndex] = finalPlan;
       } else {
         const newId = planData.id && !String(planData.id).startsWith('plan-') ? planData.id : generateUUID();
         finalPlan = {
@@ -138,6 +186,8 @@ class DatabaseService {
         updatedPlans = [finalPlan, ...plans];
       }
 
+      // Pastikan list konten selalu terbebas dari duplikasi
+      updatedPlans = this.deduplicatePlans(updatedPlans);
       state.set('contentPlans', updatedPlans);
       
       try {
@@ -246,7 +296,11 @@ class DatabaseService {
         }
       }
 
-      notify.success(isEdit ? 'Rencana konten berhasil diperbarui!' : 'Rencana konten baru berhasil dibuat!');
+      if (isToggle) {
+        notify.success(planData.is_posted ? 'Konten ditandai telah diposting!' : 'Status progres konten diperbarui!');
+      } else {
+        notify.success(isEdit ? 'Rencana konten berhasil diperbarui!' : 'Rencana konten baru berhasil dibuat!');
+      }
       return finalPlan;
     } catch (err) {
       console.error('[Calendey DB] Gagal menyimpan rencana konten:', err);
@@ -298,7 +352,7 @@ class DatabaseService {
       }
     }
 
-    await this.saveContentPlan(plan);
+    await this.saveContentPlan(plan, true);
   }
 }
 
