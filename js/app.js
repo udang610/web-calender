@@ -12,6 +12,7 @@ import { viewManager } from './views.js';
 import { modals } from './modals.js';
 import { CONFIG, loadRuntimeConfig } from './config.js';
 import { notify } from './notifications.js';
+import { waGateway } from './whatsapp-gateway.js';
 
 class CalendeyApp {
   async init() {
@@ -114,7 +115,7 @@ class CalendeyApp {
   }
 
   initReminderChecker() {
-    setInterval(() => {
+    setInterval(async () => {
       const user = state.get('user');
       if (!user || user.reminders_enabled === false) return;
 
@@ -140,14 +141,32 @@ class CalendeyApp {
           const notifiedKey = `calendey_alerted_${plan.id}_${planRemindDateStr}_${planRemindTime}`;
           if (!sessionStorage.getItem(notifiedKey)) {
             sessionStorage.setItem(notifiedKey, 'true');
-            if (modals && typeof modals.openReminderAlertModal === 'function') {
-              modals.openReminderAlertModal(plan);
+
+            // Cek apakah fitur kirim otomatis via WhatsApp Gateway aktif & memiliki token
+            if (waGateway.isAutoSendEnabled() && waGateway.hasToken()) {
+              console.log(`[Calendey Auto] Mengirim pengingat otomatis untuk "${plan.title}" ke HP...`);
+              const res = await waGateway.dispatchPlanReminder(plan, user);
+              if (res.success) {
+                notify.success(`Pesan pengingat otomatis "${plan.title}" telah terkirim ke WhatsApp HP Anda!`);
+                break;
+              } else {
+                console.warn('[Calendey Auto] Dispatch gateway error:', res.error);
+                if (modals && typeof modals.openReminderAlertModal === 'function') {
+                  modals.openReminderAlertModal(plan);
+                }
+                break;
+              }
+            } else {
+              // Jika belum memiliki token gateway, tampilkan alert modal interaktif
+              if (modals && typeof modals.openReminderAlertModal === 'function') {
+                modals.openReminderAlertModal(plan);
+              }
+              break;
             }
-            break;
           }
         }
       }
-    }, 20000);
+    }, 15000);
   }
 
   bindEvents() {

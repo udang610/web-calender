@@ -9,6 +9,7 @@ import { db } from './db.js';
 import { auth } from './auth.js';
 import { uploadService } from './upload.js';
 import { notify } from './notifications.js';
+import { waGateway } from './whatsapp-gateway.js';
 
 class ModalManager {
   constructor() {
@@ -478,6 +479,17 @@ class ModalManager {
           </div>
 
           <div class="form-group">
+            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>API Token WhatsApp Gateway (Fonnte)</span>
+              <a href="https://fonnte.com" target="_blank" rel="noopener noreferrer" style="font-size: 0.72rem; color: #25d366; text-decoration: underline;">fonnte.com</a>
+            </label>
+            <input type="password" id="settingsGatewayToken" class="form-input" style="padding-left: 14px; font-family: monospace;" value="${waGateway.getToken()}" placeholder="Token Fonnte untuk kirim otomatis ke HP">
+            <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px;">
+              Status: <strong style="color: ${waGateway.hasToken() ? '#16a34a' : '#ea580c'};">${waGateway.hasToken() ? '● Gateway Terhubung' : '○ Belum Dikonfigurasi'}</strong>
+            </span>
+          </div>
+
+          <div class="form-group">
             <label class="form-label">Pilihan Tema Tampilan</label>
             <div class="profile-theme-buttons">
               <button type="button" class="profile-theme-btn ${state.get('theme') === 'light' ? 'active' : ''}" data-set-theme="light" onclick="window.calendeySetTheme('light')">
@@ -523,18 +535,20 @@ class ModalManager {
 
     document.getElementById('btnSaveSettings').addEventListener('click', async () => {
       const full_name = document.getElementById('settingsFullName').value.trim();
-      const whatsapp_number = document.getElementById('settingsWhatsapp').value.trim();
+      let whatsapp_number = document.getElementById('settingsWhatsapp').value.trim();
+      const gatewayToken = document.getElementById('settingsGatewayToken')?.value.trim() || '';
 
       if (!full_name) {
         notify.error('Nama pengguna wajib diisi');
         return;
       }
 
-      // Regex validasi nomor WA
-      if (whatsapp_number && !/^62[0-9]{8,13}$/.test(whatsapp_number)) {
-        notify.error('Nomor WhatsApp harus diawali kode 62 (contoh: 6281234567890)');
-        return;
+      if (whatsapp_number) {
+        whatsapp_number = waGateway.normalizePhone(whatsapp_number);
       }
+
+      // Simpan Gateway Token
+      waGateway.setToken(gatewayToken);
 
       await auth.updateProfile({
         full_name,
@@ -869,27 +883,35 @@ class ModalManager {
 
     const user = state.get('user') || {};
     let phone = user.whatsapp_number || '6281219958750';
-    phone = String(phone).replace(/[^0-9]/g, '');
-    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
-    else if (!phone.startsWith('62')) phone = '62' + phone;
+    phone = waGateway.normalizePhone(phone);
 
     const timeStr = plan.remind_time || '15:00';
+    const hasToken = waGateway.hasToken();
 
     this.modalOverlay.innerHTML = `
-      <div class="modal-card" style="max-width: 440px; text-align: center; padding: 28px 24px;">
+      <div class="modal-card" style="max-width: 460px; text-align: center; padding: 28px 24px;">
         <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(37, 211, 102, 0.12); color: #25d366; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 2rem;">
           <i class="ph-bold ph-whatsapp-logo"></i>
         </div>
         <div style="font-size: 0.75rem; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Waktunya Posting Konten!</div>
         <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text); margin-bottom: 8px;">${plan.title}</h3>
         <p style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px;">
-          Jadwal pengingat jam <strong>${timeStr} WIB</strong> telah tiba untuk nomor <strong>+${phone}</strong>. Kirimkan pesan draf konten sekarang ke WhatsApp Anda.
+          Jadwal pengingat jam <strong>${timeStr} WIB</strong> telah tiba untuk nomor <strong>+${phone}</strong>. Kirimkan draf konten sekarang ke WhatsApp Anda.
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          <button type="button" class="btn-primary" id="btnAlertOpenWA" style="background: #25d366; border-color: #25d366; justify-content: center; padding: 12px; font-weight: 700;">
-            <i class="ph-bold ph-paper-plane-tilt"></i> Buka & Kirim WhatsApp Sekarang
-          </button>
+          ${hasToken ? `
+            <button type="button" class="btn-primary" id="btnAlertAutoSendWA" style="background: #25d366; border-color: #25d366; justify-content: center; padding: 12px; font-weight: 700;">
+              <i class="ph-bold ph-paper-plane-tilt"></i> Kirim Otomatis ke WhatsApp Sekarang
+            </button>
+            <button type="button" class="btn-secondary" id="btnAlertOpenWA" style="justify-content: center; padding: 10px; font-size: 0.82rem;">
+              <i class="ph-bold ph-arrow-square-out"></i> Buka WhatsApp Web/App (Manual)
+            </button>
+          ` : `
+            <button type="button" class="btn-primary" id="btnAlertOpenWA" style="background: #25d366; border-color: #25d366; justify-content: center; padding: 12px; font-weight: 700;">
+              <i class="ph-bold ph-paper-plane-tilt"></i> Buka & Kirim WhatsApp Sekarang
+            </button>
+          `}
           <button type="button" class="btn-secondary" onclick="window.calendeyCloseModal()" style="justify-content: center; padding: 10px;">
             Nanti Saja
           </button>
@@ -899,11 +921,28 @@ class ModalManager {
 
     this.modalOverlay.classList.add('active');
 
+    const autoBtn = document.getElementById('btnAlertAutoSendWA');
+    if (autoBtn) {
+      autoBtn.addEventListener('click', async () => {
+        autoBtn.disabled = true;
+        autoBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Mengirim Otomatis...';
+        const res = await waGateway.dispatchPlanReminder(plan, user);
+        if (res.success) {
+          notify.success(`Pesan pengingat otomatis telah terkirim ke WhatsApp HP (+${phone})!`);
+          this.close();
+        } else {
+          notify.error(`Gagal mengirim otomatis: ${res.error}. Membuka link WhatsApp manual...`);
+          window.calendeySendWhatsAppReminder(plan.id, false);
+          this.close();
+        }
+      });
+    }
+
     const waBtn = document.getElementById('btnAlertOpenWA');
     if (waBtn) {
       waBtn.addEventListener('click', () => {
         this.close();
-        window.calendeySendWhatsAppReminder(plan.id);
+        window.calendeySendWhatsAppReminder(plan.id, false);
       });
     }
   }
@@ -1022,7 +1061,7 @@ window.calendeyDeletePlan = async (planId) => {
   }
 };
 
-window.calendeySendWhatsAppReminder = (planId) => {
+window.calendeySendWhatsAppReminder = async (planId, tryAuto = true) => {
   const plans = state.get('contentPlans') || [];
   const plan = plans.find(p => p.id === planId);
   if (!plan) {
@@ -1031,64 +1070,46 @@ window.calendeySendWhatsAppReminder = (planId) => {
   }
 
   const user = state.get('user') || {};
-  let phone = user.whatsapp_number ? String(user.whatsapp_number).replace(/[^0-9]/g, '') : '';
-  if (!phone) {
-    phone = prompt('Masukkan nomor WhatsApp tujuan pengingat (contoh: 6281234567890):', '628');
-    if (!phone) return;
-    phone = phone.replace(/[^0-9]/g, '');
-    if (!phone.startsWith('62')) {
-      if (phone.startsWith('0')) phone = '62' + phone.substring(1);
-      else phone = '62' + phone;
+  let phone = waGateway.normalizePhone(user.whatsapp_number || '6281219958750');
+
+  // Jika coba pengiriman otomatis dan token tersedia
+  if (tryAuto && waGateway.hasToken() && waGateway.isAutoSendEnabled()) {
+    notify.info('Mengirim pengingat otomatis ke WhatsApp HP...');
+    const res = await waGateway.dispatchPlanReminder(plan, user);
+    if (res.success) {
+      notify.success(`Pesan pengingat otomatis telah berhasil dikirim ke WhatsApp HP (+${phone})!`);
+      return;
     }
   }
 
-  const nationalDays = state.get('nationalDays') || [];
-  const natDay = plan.national_day_id ? nationalDays.find(n => n.id === plan.national_day_id) : null;
-  const natDayName = natDay ? natDay.name : 'Hari Nasional';
-  const userName = user.full_name || 'Sahabat Calendey';
-  const statusLabel = plan.status ? plan.status.toUpperCase() : 'IDEA';
-  const targetDate = plan.planned_date || new Date().toISOString().split('T')[0];
-  const targetTime = plan.scheduled_at
-    ? new Date(plan.scheduled_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-    : (plan.remind_time || '09:00');
-
-  const message = `Halo ${userName}! 🇮🇩\n\n` +
-    `*PENGINGAT JADWAL KONTEN CALENDEY*\n` +
-    `--------------------------------\n` +
-    `📌 *Momen:* ${natDayName}\n` +
-    `📝 *Judul Konten:* ${plan.title}\n` +
-    `🗓 *Target Tayang:* ${targetDate} (${targetTime} WIB)\n` +
-    `⚡ *Status Konten:* ${statusLabel}\n` +
-    (plan.caption ? `💬 *Draft Caption:*\n"${plan.caption.length > 100 ? plan.caption.slice(0, 100) + '...' : plan.caption}"\n` : '') +
-    (plan.notes ? `💡 *Catatan Tim:* ${plan.notes}\n` : '') +
-    `--------------------------------\n` +
-    `Pastikan desain poster dan materi grafis sudah final ya! ✨\n\n` +
-    `_Notifikasi Pengingat Otomatis Calendey_`;
-
+  const message = waGateway.formatReminderMessage(plan, user);
   const waUrl = `https://api.whatsapp.com/send/?phone=${phone}&text=${encodeURIComponent(message)}&type=phone_number&app_absent=0`;
   window.open(waUrl, '_blank');
   notify.success(`Membuka WhatsApp untuk mengirim pengingat ke +${phone}`);
 };
 
-window.calendeyTestWhatsAppNotification = (phone) => {
+window.calendeyTestWhatsAppNotification = async (phone) => {
   const user = state.get('user') || {};
-  let targetPhone = phone || user.whatsapp_number || '';
-  targetPhone = String(targetPhone).replace(/[^0-9]/g, '');
-  if (!targetPhone) {
-    targetPhone = prompt('Masukkan nomor WhatsApp untuk verifikasi pengingat (contoh: 6281234567890):', '628');
-    if (!targetPhone) return;
-    targetPhone = targetPhone.replace(/[^0-9]/g, '');
-  }
-  if (!targetPhone.startsWith('62')) {
-    if (targetPhone.startsWith('0')) targetPhone = '62' + targetPhone.substring(1);
-    else targetPhone = '62' + targetPhone;
+  let targetPhone = waGateway.normalizePhone(phone || user.whatsapp_number || '6281219958750');
+
+  // Jika token tersedia, tes kirim otomatis langsung ke HP
+  if (waGateway.hasToken()) {
+    notify.info('Mengirim pesan tes otomatis ke nomor HP...');
+    const res = await waGateway.sendTestMessage(targetPhone);
+    if (res.success) {
+      notify.success(`Pesan tes otomatis berhasil dikirim ke WhatsApp HP +${targetPhone}!`);
+      return;
+    } else {
+      notify.error(`Gagal mengirim otomatis: ${res.error || 'Periksa token'}. Mengalihkan ke link WhatsApp manual.`);
+    }
   }
 
-  const message = `Halo ${user.full_name || 'Pengguna Calendey'}! 👋🇮🇩\n\n` +
+  const message =
+    `Halo ${user.full_name || 'Pengguna Calendey'}! 👋🇮🇩\n\n` +
     `Ini adalah pesan verifikasi integrasi *Reminder Langsung WhatsApp* dari aplikasi Calendey.\n\n` +
     `✅ *Status Integrasi:* AKTIF & TERKONEKSI (Direct API)\n` +
     `📱 *Nomor Tujuan:* +${targetPhone}\n` +
-    `⏰ *Waktu Verifikasi:* ${new Date().toLocaleString('id-ID')}\n\n` +
+    `⏰ *Waktu Verifikasi:* ${new Date().toLocaleString('id-ID')} WIB\n\n` +
     `Notifikasi jadwal konten media sosial Anda akan dikirimkan langsung ke nomor ini.\n\n` +
     `Salam,\n*Tim Calendey Indonesia*`;
 

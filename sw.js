@@ -2,7 +2,7 @@
 // CALENDEY — Service Worker (Network-First for HTML, Cache-First for static)
 // ========================================================================
 
-const CACHE_NAME = 'calendey-v1.2.0';
+const CACHE_NAME = 'calendey-v1.3.0';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
