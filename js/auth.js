@@ -130,8 +130,62 @@ class AuthService {
     );
 
     if (matchedAccount) {
+      // 1. Simpan sesi lokal terlebih dahulu
       state.set('user', matchedAccount);
       localStorage.setItem('calendey_user_profile', JSON.stringify(matchedAccount));
+
+      // 2. Jika Supabase Cloud aktif, otomatis sinkronkan ke auth.users dan tabel public.profiles
+      if (db.client && matchedAccount.email) {
+        try {
+          let supaUserId = null;
+          const { data: signInData } = await db.client.auth.signInWithPassword({
+            email: matchedAccount.email,
+            password: matchedAccount.password
+          });
+
+          if (signInData?.user) {
+            supaUserId = signInData.user.id;
+          } else {
+            const { data: signUpData } = await db.client.auth.signUp({
+              email: matchedAccount.email,
+              password: matchedAccount.password,
+              options: {
+                data: {
+                  full_name: matchedAccount.full_name,
+                  whatsapp_number: matchedAccount.whatsapp_number
+                }
+              }
+            });
+            if (signUpData?.user) {
+              supaUserId = signUpData.user.id;
+            }
+          }
+
+          if (supaUserId) {
+            matchedAccount.id = supaUserId;
+            state.set('user', matchedAccount);
+            localStorage.setItem('calendey_user_profile', JSON.stringify(matchedAccount));
+
+            const { error: profErr } = await db.client.from('profiles').upsert({
+              id: supaUserId,
+              full_name: matchedAccount.full_name,
+              whatsapp_number: matchedAccount.whatsapp_number,
+              theme: matchedAccount.theme || 'light',
+              reminders_enabled: true,
+              updated_at: new Date().toISOString()
+            });
+
+            if (!profErr) {
+              console.log('[Calendey Auth] Data profil berhasil masuk ke public.profiles Supabase:', supaUserId);
+            } else {
+              console.warn('[Calendey Auth] Upsert public.profiles notice:', profErr);
+            }
+          }
+        } catch (syncErr) {
+          console.warn('[Calendey Auth] Sinkronisasi cloud Supabase:', syncErr);
+        }
+      }
+
       notify.success(`Selamat datang, ${matchedAccount.full_name}!`);
       return { success: true, user: matchedAccount };
     }
@@ -242,27 +296,78 @@ class AuthService {
         localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
       } catch (e) { }
 
-      // Simpan langsung ke Supabase Database Cloud
-      if (db.client && updatedUser.id) {
-        try {
-          const profilePayload = {
-            id: updatedUser.id,
-            full_name: updatedUser.full_name,
-            whatsapp_number: updatedUser.whatsapp_number,
-            updated_at: new Date().toISOString()
-          };
-          db.client.from('profiles').upsert(profilePayload).then(({ error }) => {
-            if (!error) console.log('[Calendey Auth] Profile & WhatsApp tersimpan ke Supabase Database');
-            else console.warn('[Calendey Auth] Supabase profiles upsert info:', error);
-          }).catch(() => {});
+  async getOrEnsureSupabaseUUID(user) {
+    if (!db.client || !user?.email) return null;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id || '');
+    if (isUUID) return user.id;
 
-          if (db.client.auth) {
-            db.client.auth.updateUser({
-              data: {
-                full_name: updatedUser.full_name,
-                whatsapp_number: updatedUser.whatsapp_number
-              }
-            }).catch(() => {});
+    try {
+      const { data: signInData } = await db.client.auth.signInWithPassword({
+        email: user.email,
+        password: user.password || 'admin-calender'
+      });
+      if (signInData?.user?.id) return signInData.user.id;
+
+      const { data: signUpData } = await db.client.auth.signUp({
+        email: user.email,
+        password: user.password || 'admin-calender',
+        options: { data: { full_name: user.full_name, whatsapp_number: user.whatsapp_number } }
+      });
+      return signUpData?.user?.id || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async updateProfile(updates) {
+    try {
+      const currentUser = state.get('user') || {};
+      const updatedUser = { ...currentUser, ...updates };
+
+      state.set('user', updatedUser);
+      localStorage.setItem('calendey_user_profile', JSON.stringify(updatedUser));
+
+      // Update di list all accounts
+      let accounts = [];
+      try {
+        accounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
+        const idx = accounts.findIndex(a => 
+          (a.id && a.id === updatedUser.id) ||
+          (a.username && a.username.toLowerCase() === (updatedUser.username || '').toLowerCase()) ||
+          (a.email && a.email.toLowerCase() === (updatedUser.email || '').toLowerCase())
+        );
+        if (idx !== -1) {
+          accounts[idx] = { ...accounts[idx], ...updatedUser };
+        } else {
+          accounts.push(updatedUser);
+        }
+        localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
+      } catch (e) { }
+
+      // Simpan langsung ke Supabase Database Cloud dengan UUID valid
+      if (db.client) {
+        try {
+          const validUUID = await this.getOrEnsureSupabaseUUID(updatedUser);
+          if (validUUID) {
+            updatedUser.id = validUUID;
+            state.set('user', updatedUser);
+            localStorage.setItem('calendey_user_profile', JSON.stringify(updatedUser));
+
+            const profilePayload = {
+              id: validUUID,
+              full_name: updatedUser.full_name,
+              whatsapp_number: updatedUser.whatsapp_number,
+              theme: updatedUser.theme || 'light',
+              reminders_enabled: true,
+              updated_at: new Date().toISOString()
+            };
+
+            const { error: profErr } = await db.client.from('profiles').upsert(profilePayload);
+            if (!profErr) {
+              console.log('[Calendey Auth] Profile & WhatsApp tersimpan ke Supabase Database dengan UUID:', validUUID);
+            } else {
+              console.warn('[Calendey Auth] Supabase profiles upsert info:', profErr);
+            }
           }
         } catch (dbErr) {
           console.warn('[Calendey Auth] Cloud sync warning:', dbErr);
