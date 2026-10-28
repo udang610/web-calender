@@ -116,7 +116,23 @@ class CalendeyApp {
         e.preventDefault();
         const identifier = document.getElementById('authScreenLoginEmail')?.value.trim();
         const pass = document.getElementById('authScreenLoginPass')?.value.trim();
-        await auth.signIn(identifier, pass);
+        const submitBtn = formLogin.querySelector('button[type="submit"]');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Memproses...';
+        }
+
+        const res = await auth.signIn(identifier, pass);
+
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="ph-bold ph-sign-in"></i> Masuk Sekarang';
+        }
+
+        if (res && res.success) {
+          this.updateUserUI();
+          viewManager.switchView('calendar');
+        }
       });
     }
 
