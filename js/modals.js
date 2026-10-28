@@ -579,7 +579,7 @@ class ModalManager {
     if (accounts.length === 0) {
       accounts = [
         {
-          id: 'acc-1',
+          id: '1df2ed64-32c9-446f-852a-2e3d13d92adb',
           name: 'Dhafin Shabir Alfatih',
           email: 'dhafinshabir610@gmail.com',
           whatsapp: '6281234567890',
@@ -721,9 +721,20 @@ class ModalManager {
       }
 
       // 2. Simpan ke local accounts dengan atribut lengkap (username & password)
+      const generateUUID = () => {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+          return crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = Math.random() * 16 | 0;
+          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      };
+
       const cleanUsername = name.toLowerCase().replace(/\s+/g, '');
       const newAcc = {
-        id: 'acc-' + Date.now(),
+        id: generateUUID(),
         username: cleanUsername,
         name: name,
         full_name: name,

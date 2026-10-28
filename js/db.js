@@ -127,8 +127,9 @@ class DatabaseService {
       }
       state.set('contentPlans', initialPlans);
 
-      // 2. Sinkronkan dari Supabase terisolasi dengan filter user_id aktif
-      if (this.isCloudConnected && user && user.id) {
+      // 2. Sinkronkan dari Supabase terisolasi dengan filter user_id aktif (hanya jika user_id berupa UUID valid)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user?.id || '');
+      if (this.isCloudConnected && user && isUUID) {
         this.client
           .from('content_plans')
           .select('*, content_assets(*), reminders(*)')
@@ -237,7 +238,8 @@ class DatabaseService {
 
       // Sinkronkan ke Supabase Cloud (content_plans & reminders)
       const user = state.get('user');
-      if (this.isCloudConnected && user && user.id) {
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user?.id || '');
+      if (this.isCloudConnected && user && isUUID) {
         try {
           const planPayload = {
             id: finalPlan.id,
@@ -358,9 +360,12 @@ class DatabaseService {
 
       if (this.isCloudConnected) {
         try {
-          await this.client.from('reminders').delete().eq('content_plan_id', planId);
-          await this.client.from('content_plans').delete().eq('id', planId);
-          console.log('[Calendey DB] Sukses menghapus konten dari Supabase:', planId);
+          const isPlanUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(planId || '');
+          if (isPlanUUID) {
+            await this.client.from('reminders').delete().eq('content_plan_id', planId);
+            await this.client.from('content_plans').delete().eq('id', planId);
+            console.log('[Calendey DB] Sukses menghapus konten dari Supabase:', planId);
+          }
         } catch (cloudErr) {
           console.warn('[Calendey DB] Catatan cloud delete:', cloudErr);
         }
