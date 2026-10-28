@@ -679,6 +679,94 @@ class ModalManager {
     });
   }
 
+  openSupabaseSettingsModal() {
+    if (!this.modalOverlay) this.init();
+
+    const currentUrl = CONFIG.SUPABASE_URL;
+    const currentKey = CONFIG.SUPABASE_ANON_KEY;
+    const isConnected = Boolean(db.client);
+
+    this.modalOverlay.innerHTML = `
+      <div class="modal-card" style="max-width: 520px;">
+        <div class="modal-header">
+          <div class="modal-title-box">
+            <h3><i class="ph-bold ph-database" style="color: #10b981; margin-right: 6px;"></i>Koneksi Supabase</h3>
+            <p>Database Cloud & Sinkronisasi Realtime Calendey</p>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="window.calendeyCloseModal()">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Status Banner -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block; box-shadow: 0 0 8px #10b981;"></span>
+              <div>
+                <div style="font-weight: 700; font-size: 0.85rem; color: var(--text);">Status: Terhubung ke Cloud</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Project Ref: <code>onikjvzkbhpbubnqjmib</code> (udang610's Org)</div>
+              </div>
+            </div>
+            <span style="font-size: 0.7rem; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.15); padding: 2px 8px; border-radius: var(--radius-pill);">Active</span>
+          </div>
+
+          <form id="formSupabaseConfig" style="display: flex; flex-direction: column; gap: 14px;">
+            <div class="form-group">
+              <label class="form-label">Supabase Project URL</label>
+              <input type="text" id="supabaseUrlInput" class="form-input" value="${currentUrl}" placeholder="https://xyzcompany.supabase.co" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Supabase Anon Key</label>
+              <textarea id="supabaseKeyInput" class="form-textarea" rows="3" style="font-family: monospace; font-size: 0.75rem;" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>${currentKey}</textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 6px;">
+              <button type="button" class="btn-secondary" style="flex: 1; justify-content: center;" onclick="window.calendeyCloseModal()">Tutup</button>
+              <button type="submit" class="btn-primary" style="flex: 1.5; justify-content: center;">
+                <i class="ph-bold ph-floppy-disk"></i> Simpan & Hubungkan
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    this.modalOverlay.classList.add('active');
+
+    const form = document.getElementById('formSupabaseConfig');
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const url = document.getElementById('supabaseUrlInput').value.trim();
+        const key = document.getElementById('supabaseKeyInput').value.trim();
+
+        if (!url || !key) {
+          notify.error('URL dan Anon Key wajib diisi');
+          return;
+        }
+
+        localStorage.setItem('calendey_supabase_url', url);
+        localStorage.setItem('calendey_supabase_anon_key', key);
+        CONFIG.SUPABASE_URL = url;
+        CONFIG.SUPABASE_ANON_KEY = key;
+
+        if (window.supabase) {
+          try {
+            db.client = window.supabase.createClient(url, key);
+            db.isCloudConnected = true;
+          } catch (err) {
+            console.warn('[Calendey] Client recreate note:', err);
+          }
+        }
+
+        notify.success('Koneksi Supabase berhasil diperbarui!');
+        this.close();
+      });
+    }
+  }
+
   previewImage(src) {
     if (!this.modalOverlay) this.init();
     this.modalOverlay.innerHTML = `

@@ -27,7 +27,16 @@ class CalendarEngine {
     state.subscribe('nationalDays', () => this.render());
     state.subscribe('contentPlans', () => this.render());
     state.subscribe('categoryFilter', () => this.render());
-    state.subscribe('selectedDate', () => this.renderDetailPanel());
+    state.subscribe('selectedDate', (newDate) => {
+      document.querySelectorAll('.calendar-day-cell').forEach(c => {
+        if (c.getAttribute('data-date') === newDate) {
+          c.classList.add('is-selected');
+        } else {
+          c.classList.remove('is-selected');
+        }
+      });
+      this.renderDetailPanel();
+    });
   }
 
   prevMonth() {
@@ -52,11 +61,21 @@ class CalendarEngine {
 
   goToToday() {
     const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     state.update({
       activeYear: now.getFullYear(),
       activeMonth: now.getMonth() + 1,
-      selectedDate: now.toISOString().split('T')[0]
+      selectedDate: todayStr
     });
+
+    setTimeout(() => {
+      const todayCell = document.querySelector(`.calendar-day-cell[data-date="${todayStr}"]`) || document.querySelector('.calendar-day-cell.is-today');
+      if (todayCell) {
+        todayCell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        todayCell.classList.add('pulse-highlight');
+        setTimeout(() => todayCell.classList.remove('pulse-highlight'), 2200);
+      }
+    }, 80);
   }
 
   getDaysMatrix(year, month) {
@@ -135,6 +154,7 @@ class CalendarEngine {
 
       const cellDiv = document.createElement('div');
       cellDiv.className = `calendar-day-cell ${cell.isCurrentMonth ? '' : 'other-month'} ${cellDateStr === todayStr ? 'is-today' : ''} ${cellDateStr === selectedDate ? 'is-selected' : ''} ${hasNationalDay ? 'has-national-day' : ''} ${isPublicHoliday ? 'is-holiday' : ''}`;
+      cellDiv.setAttribute('data-date', cellDateStr);
 
       // Render Visual Chips Hari Nasional & Konten
       let eventsHtml = '<div class="day-events-wrapper">';

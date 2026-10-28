@@ -34,16 +34,13 @@
   <!-- 1. FULLSCREEN AUTH SCREEN (Login Sederhana & Bersih) -->
   <div class="auth-screen" id="authScreen" style="display: flex;">
     <div class="auth-card">
-      <div class="auth-brand-badge">
-        <div class="auth-brand-logo" style="background: transparent; box-shadow: none;">
-          <img src="images/icons/logo.svg" alt="Calendey Logo" style="width: 44px; height: 44px; display: block; margin: 0 auto;">
-        </div>
-        <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em; margin-top: 4px;">Calendey</h2>
-        <p style="font-size: 0.8rem; color: var(--text-muted);">Satu kalender, sejuta makna, satu rencana konten.</p>
+      <div class="auth-brand-badge" style="margin-bottom: 20px;">
+        <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em;">Calendey</h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">Platform Kalender & Manajemen Konten Indonesia</p>
       </div>
 
       <!-- Form Login Sederhana (Tanpa Tab & Tanpa Masuk Cepat) -->
-      <form id="authScreenLoginForm" style="display: flex; flex-direction: column; gap: 14px; margin-top: 6px;">
+      <form id="authScreenLoginForm" style="display: flex; flex-direction: column; gap: 14px;">
         <div class="form-group">
           <label class="form-label">Username atau Email</label>
           <input type="text" id="authScreenLoginEmail" class="form-input" style="padding-left: 14px;" placeholder="Superadmin / dhafin" value="Superadmin" required>
@@ -55,12 +52,6 @@
         <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 11px; margin-top: 4px;">
           <i class="ph-bold ph-sign-in"></i> Masuk Sekarang
         </button>
-
-        <div style="margin-top: 10px; padding: 10px 12px; background: var(--bg-subtle); border-radius: var(--radius-sm); font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; border: 1px solid var(--surface-border);">
-          <div style="font-weight: 700; color: var(--text); margin-bottom: 2px;">Akun Tersedia:</div>
-          <div>• <strong>Admin:</strong> <code>Superadmin</code> / <code>admin-calender</code></div>
-          <div>• <strong>User:</strong> <code>dhafin</code> / <code>dhafin12345</code></div>
-        </div>
       </form>
     </div>
   </div>
@@ -95,11 +86,6 @@
           <i class="ph-bold ph-bookmarks"></i>
           <span>Kategori Hari</span>
         </button>
-
-        <button type="button" class="nav-item" data-view="settings">
-          <i class="ph-bold ph-sliders"></i>
-          <span>Pengaturan & WA</span>
-        </button>
       </nav>
 
       <!-- Sidebar Footer (Polos Bersih) -->
@@ -110,12 +96,9 @@
 
     <!-- Main Content Shell -->
     <main class="main-wrapper">
-      <!-- Topbar Header (Tinggi Lebih Lega) -->
+      <!-- Topbar Header (Tinggi Lebih Lega & Padding Bersih) -->
       <header class="topbar">
         <div class="topbar-left">
-          <button type="button" class="menu-toggle" id="menuToggle" aria-label="Toggle Sidebar">
-            <i class="ph-bold ph-list"></i>
-          </button>
           <div class="page-title-box">
             <h2 id="topbarPageTitle">Kalender Nasional</h2>
             <p id="topbarPageSubtitle">Jadwal hari besar nasional Indonesia & agenda konten</p>
@@ -129,10 +112,10 @@
             <span>Masuk / Daftar</span>
           </button>
 
-          <!-- User Profile di Pojok Kanan Navbar (Hanya Menampilkan Full Name & Caret Arrow) -->
+          <!-- User Profile di Pojok Kanan Navbar (Polos Tanpa Border Highlight) -->
           <div class="navbar-profile-dropdown" id="navbarProfileDropdown">
-            <button type="button" class="navbar-profile-btn" id="navbarUserBtn" title="Menu Pengguna & Pengaturan" style="gap: 6px; padding: 6px 12px; border-radius: var(--radius-md);">
-              <span class="navbar-user-name" id="navbarUserName" style="font-size: 0.88rem; font-weight: 700; color: var(--text);">Superadmin</span>
+            <button type="button" class="navbar-profile-btn" id="navbarUserBtn" title="Menu Pengguna & Pengaturan">
+              <span class="navbar-user-name" id="navbarUserName">Superadmin</span>
               <i class="ph-bold ph-caret-down navbar-user-caret"></i>
             </button>
 
@@ -169,6 +152,11 @@
               <button type="button" class="profile-menu-item" id="btnMenuEditProfile">
                 <i class="ph-bold ph-user-gear"></i>
                 <span>Pengaturan Profil & WhatsApp</span>
+              </button>
+
+              <button type="button" class="profile-menu-item" id="btnMenuSupabase">
+                <i class="ph-bold ph-database"></i>
+                <span>Koneksi Supabase</span>
               </button>
 
               <button type="button" class="profile-menu-item" id="btnMenuAdminPanel">

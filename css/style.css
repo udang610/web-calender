@@ -250,13 +250,13 @@ body {
 
 /* Topbar Header */
 .topbar {
-  height: 84px;
+  min-height: 92px;
   background: var(--surface);
   border-bottom: 1px solid var(--surface-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
+  padding: 18px 36px;
   position: sticky;
   top: 0;
   z-index: 40;
@@ -278,16 +278,26 @@ body {
   cursor: pointer;
 }
 
+.page-title-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
 .page-title-box h2 {
   font-size: 1.25rem;
   font-weight: 800;
   color: var(--text);
   letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 1.25;
 }
 
 .page-title-box p {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
+  margin: 0;
 }
 
 .topbar-right {
@@ -302,7 +312,7 @@ body {
   background: var(--surface-border);
 }
 
-/* Navbar Profile Dropdown (Polos Tanpa Pill Border) */
+/* Navbar Profile Dropdown (Polos Tanpa Border Highlight) */
 .navbar-profile-dropdown {
   position: relative;
 }
@@ -311,19 +321,22 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--surface);
-  border: 1px solid var(--surface-border);
-  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  padding: 8px 12px;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   color: var(--text);
+  box-shadow: none;
+  outline: none;
 }
 
 .navbar-profile-btn:hover,
 .navbar-profile-dropdown.open .navbar-profile-btn {
   background: var(--surface-hover);
-  border-color: var(--border-focus);
+  border: none;
+  box-shadow: none;
 }
 
 .navbar-user-name {

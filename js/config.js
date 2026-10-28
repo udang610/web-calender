@@ -9,9 +9,9 @@ export const CONFIG = {
   DEFAULT_THEME: 'light',
   TIMEZONE: 'Asia/Jakarta',
 
-  // Supabase Credentials — Aktif Langsung
-  SUPABASE_URL: localStorage.getItem('calendey_supabase_url') || 'https://fjprqmgzouizqbopmvia.supabase.co',
-  SUPABASE_ANON_KEY: localStorage.getItem('calendey_supabase_anon_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqcHJxbWd6b3VpenFib3BtdmlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MzMzMjEsImV4cCI6MjA5MzEwOTMyMX0.P217IMPJZ6t_PKkcKuvwNsuwtZw-wbCatZ5Ka3_emPk',
+  // Supabase Credentials — Aktif Terhubung ke Supabase udang610
+  SUPABASE_URL: localStorage.getItem('calendey_supabase_url') || 'https://onikjvzkbhpbubnqjmib.supabase.co',
+  SUPABASE_ANON_KEY: localStorage.getItem('calendey_supabase_anon_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uaWtqdnprYmhwYnVibnFqbWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1NjEyMzgsImV4cCI6MjEwODEzNzIzOH0.VvnY63Ysf3q73_owAdYVeBn96rQEkhDZyqwY4s3W1Gc',
 
   // Limits & Validations (Sesuai PRD)
   MAX_UPLOAD_SIZE_BYTES: 5 * 1024 * 1024, // 5 MB
