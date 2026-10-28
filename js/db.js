@@ -79,6 +79,9 @@ class DatabaseService {
 
   async loadContentPlans() {
     try {
+      const user = state.get('user');
+      const userId = user?.id || null;
+
       let deletedIds = [];
       try {
         deletedIds = JSON.parse(localStorage.getItem('calendey_deleted_plan_ids') || '[]');
@@ -96,39 +99,47 @@ class DatabaseService {
       const isValidPlan = (p) => {
         if (!p || !p.id) return false;
         if (deletedIds.includes(p.id)) return false;
-        return !isDemoPlan(p);
+        if (isDemoPlan(p)) return false;
+        // Isolasi kepemilikan konten per pengguna (User Multi-Tenant)
+        if (userId) {
+          // Jika konten memiliki user_id yang berbeda dengan user aktif, sembunyikan
+          if (p.user_id && p.user_id !== userId) return false;
+          // Konten tanpa user_id (dibuat di awal sebelum multi-user) dianggap milik Superadmin
+          if (!p.user_id && userId !== '3c72477c-5c56-44a8-91aa-8cfd1367db06' && user?.username?.toLowerCase() !== 'superadmin') {
+            return false;
+          }
+        }
+        return true;
       };
 
-      // 1. Ambil dari cache local storage secara instan
-      const cached = localStorage.getItem('calendey_plans_cache');
+      // 1. Ambil dari cache local storage terisolasi per akun pengguna
+      const userCacheKey = userId ? `calendey_plans_cache_${userId}` : 'calendey_plans_cache';
+      const cached = localStorage.getItem(userCacheKey) || localStorage.getItem('calendey_plans_cache');
+      let initialPlans = [];
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
           const validCached = (parsed || []).filter(isValidPlan);
-          const cleaned = this.deduplicatePlans(validCached);
-          state.set('contentPlans', cleaned);
-          localStorage.setItem('calendey_plans_cache', JSON.stringify(cleaned));
+          initialPlans = this.deduplicatePlans(validCached);
         } catch (e) {
-          console.warn('[Calendey DB] Parse cache error:', e);
-          state.set('contentPlans', []);
+          initialPlans = [];
         }
-      } else {
-        state.set('contentPlans', []);
-        localStorage.setItem('calendey_plans_cache', JSON.stringify([]));
       }
+      state.set('contentPlans', initialPlans);
 
-      // 2. Sinkronkan dari Supabase jika user sedang login (asynchronous tanpa blocking UI)
-      if (this.isCloudConnected && state.get('user')) {
+      // 2. Sinkronkan dari Supabase terisolasi dengan filter user_id aktif
+      if (this.isCloudConnected && user && user.id) {
         this.client
           .from('content_plans')
           .select('*, content_assets(*), reminders(*)')
+          .eq('user_id', user.id)
           .order('planned_date', { ascending: true })
           .then(({ data, error }) => {
             if (!error && data) {
               const validCloud = (data || []).filter(isValidPlan);
               const cleaned = this.deduplicatePlans(validCloud);
               state.set('contentPlans', cleaned);
-              localStorage.setItem('calendey_plans_cache', JSON.stringify(cleaned));
+              localStorage.setItem(userCacheKey, JSON.stringify(cleaned));
             }
           })
           .catch(() => {});
@@ -167,6 +178,9 @@ class DatabaseService {
       let updatedPlans;
       let finalPlan;
 
+      const user = state.get('user');
+      const userId = user?.id || null;
+
       if (isEdit) {
         const existing = plans[existingIndex];
         const validId = (existing.id && !String(existing.id).startsWith('plan-'))
@@ -177,6 +191,7 @@ class DatabaseService {
           ...existing,
           ...planData,
           id: validId,
+          user_id: existing.user_id || userId,
           updated_at: new Date().toISOString()
         };
         updatedPlans = [...plans];
@@ -186,6 +201,7 @@ class DatabaseService {
         finalPlan = {
           ...planData,
           id: newId,
+          user_id: userId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           content_assets: planData.content_assets || []
@@ -197,8 +213,9 @@ class DatabaseService {
       updatedPlans = this.deduplicatePlans(updatedPlans);
       state.set('contentPlans', updatedPlans);
       
+      const userCacheKey = userId ? `calendey_plans_cache_${userId}` : 'calendey_plans_cache';
       try {
-        localStorage.setItem('calendey_plans_cache', JSON.stringify(updatedPlans));
+        localStorage.setItem(userCacheKey, JSON.stringify(updatedPlans));
       } catch (storageErr) {
         console.warn('[Calendey DB] LocalStorage quota reached, saving lightweight plan metadata:', storageErr);
         try {
@@ -212,7 +229,7 @@ class DatabaseService {
               storage_path: a.storage_path?.length > 150 ? a.storage_path.slice(0, 80) : a.storage_path
             }))
           }));
-          localStorage.setItem('calendey_plans_cache', JSON.stringify(lightweight));
+          localStorage.setItem(userCacheKey, JSON.stringify(lightweight));
         } catch (e2) {
           console.warn('[Calendey DB] Stored in active runtime state:', e2);
         }
@@ -318,10 +335,14 @@ class DatabaseService {
 
   async deleteContentPlan(planId) {
     try {
+      const user = state.get('user');
+      const userId = user?.id;
+      const userCacheKey = userId ? `calendey_plans_cache_${userId}` : 'calendey_plans_cache';
+
       const plans = state.get('contentPlans') || [];
       const filtered = plans.filter(p => p.id !== planId);
       state.set('contentPlans', filtered);
-      localStorage.setItem('calendey_plans_cache', JSON.stringify(filtered));
+      localStorage.setItem(userCacheKey, JSON.stringify(filtered));
 
       // Catat ID ke daftar terhapus agar tidak pernah dimuat ulang dari cache/cloud lama
       let deletedIds = [];

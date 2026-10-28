@@ -288,6 +288,7 @@ class AuthService {
               };
               state.set('user', activeUser);
               localStorage.setItem('calendey_user_profile', JSON.stringify(activeUser));
+              await db.loadContentPlans();
               notify.success(`Selamat datang, ${activeUser.full_name || 'User'}!`);
               return { success: true, user: activeUser };
             }
@@ -308,6 +309,7 @@ class AuthService {
       const fallbackUser = matchedAccount || (isSuperadminMatch ? DEFAULT_ACCOUNTS[0] : DEFAULT_ACCOUNTS[1]);
       state.set('user', fallbackUser);
       localStorage.setItem('calendey_user_profile', JSON.stringify(fallbackUser));
+      await db.loadContentPlans();
       notify.success(`Selamat datang, ${fallbackUser.full_name}!`);
       return { success: true, user: fallbackUser };
     }
@@ -344,6 +346,7 @@ class AuthService {
 
         state.set('user', activeUser);
         localStorage.setItem('calendey_user_profile', JSON.stringify(activeUser));
+        await db.loadContentPlans();
         notify.success(`Selamat datang, ${activeUser.full_name}!`);
         return { success: true, user: activeUser };
       }
@@ -435,6 +438,7 @@ class AuthService {
     } catch (e) { }
 
     state.set('user', null);
+    state.set('contentPlans', []);
     localStorage.removeItem('calendey_user_profile');
     notify.info('Anda telah keluar dari akun');
   }

@@ -100,15 +100,40 @@ class CalendeyApp {
 
     const name = user.full_name || 'Pengguna Calendey';
     const wa = user.whatsapp_number ? `+${user.whatsapp_number}` : 'Belum Ada Nomor WA';
+    const role = (user.role || 'Member').toUpperCase();
 
-    // Update in navbar (hanya Full Name)
+    // Update in navbar & dropdown profile
     const navNameEl = document.getElementById('navbarUserName');
     const menuNameEl = document.getElementById('menuHeaderName');
     const menuWaEl = document.getElementById('menuHeaderWA');
+    const menuRoleEl = document.getElementById('menuHeaderRole');
+    const btnMenuAdminPanel = document.getElementById('btnMenuAdminPanel');
 
     if (navNameEl) navNameEl.textContent = name;
     if (menuNameEl) menuNameEl.textContent = name;
     if (menuWaEl) menuWaEl.textContent = wa;
+    if (menuRoleEl) {
+      menuRoleEl.textContent = role;
+      if (role === 'ADMIN') {
+        menuRoleEl.style.background = 'var(--primary-subtle)';
+        menuRoleEl.style.color = 'var(--primary)';
+      } else if (role === 'CREATOR' || role === 'USER') {
+        menuRoleEl.style.background = 'rgba(59, 130, 246, 0.15)';
+        menuRoleEl.style.color = '#2563eb';
+      } else {
+        menuRoleEl.style.background = 'rgba(100, 116, 139, 0.15)';
+        menuRoleEl.style.color = '#475569';
+      }
+    }
+
+    // Role Gating: Hanya Role Admin yang dapat melihat dan mengakses Panel Admin Kelola Akun
+    if (btnMenuAdminPanel) {
+      if (user.role === 'Admin') {
+        btnMenuAdminPanel.style.display = 'flex';
+      } else {
+        btnMenuAdminPanel.style.display = 'none';
+      }
+    }
 
     // Sinkronkan tombol tema sesuai preferensi user
     this.syncThemeButtons(state.get('theme'));

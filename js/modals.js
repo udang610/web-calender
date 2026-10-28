@@ -562,6 +562,12 @@ class ModalManager {
   openAdminPanelModal() {
     if (!this.modalOverlay) this.init();
 
+    const currentUser = state.get('user');
+    if (currentUser?.role !== 'Admin') {
+      notify.error('Akses ditolak: Hanya peran Admin yang dapat mengakses Panel Kelola Akun');
+      return;
+    }
+
     // Ambil list akun tersimpan
     let accounts = [];
     try {
