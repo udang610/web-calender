@@ -1,42 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
-  <defs>
-    <linearGradient id="calBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#f8fafc"/>
-    </linearGradient>
-    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#e11d48"/>
-      <stop offset="100%" stop-color="#be123c"/>
-    </linearGradient>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24"/>
-      <stop offset="100%" stop-color="#f59e0b"/>
-    </linearGradient>
-    <filter id="calShadow" x="-10%" y="-10%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#e11d48" flood-opacity="0.22"/>
-    </filter>
-  </defs>
-
-  <!-- Calendar Base Shell with Soft Drop Shadow -->
-  <rect x="12" y="16" width="76" height="74" rx="16" fill="url(#calBgGrad)" stroke="#fecdd3" stroke-width="2" filter="url(#calShadow)"/>
-
-  <!-- Red Indonesian Accent Header -->
-  <path d="M 12 30 C 12 21.16 19.16 16 28 16 L 72 16 C 80.84 16 88 21.16 88 30 L 88 36 L 12 36 Z" fill="url(#headerGrad)"/>
-
-  <!-- Metal Ring Binders -->
-  <rect x="28" y="10" width="6" height="12" rx="3" fill="#cbd5e1"/>
-  <rect x="66" y="10" width="6" height="12" rx="3" fill="#cbd5e1"/>
-
-  <!-- Calendar Date Dots / Grid Representation -->
-  <circle cx="28" cy="50" r="4.5" fill="#fecdd3"/>
-  <circle cx="50" cy="50" r="4.5" fill="#e11d48"/>
-  <circle cx="72" cy="50" r="4.5" fill="#fecdd3"/>
+  <!-- Transparent Background / Clean SVG Monogram -->
+  <!-- Outer Circular Ring -->
+  <circle cx="50" cy="50" r="44" fill="none" stroke="#941438" stroke-width="4" stroke-linecap="round"/>
   
-  <circle cx="28" cy="68" r="4.5" fill="#fed7aa"/>
-  <circle cx="50" cy="68" r="4.5" fill="#bbf7d0"/>
-  <circle cx="72" cy="68" r="4.5" fill="#bfdbfe"/>
-
-  <!-- Golden Content Sparkle Icon -->
-  <path d="M 72 64 Q 72 73 80 73 Q 72 73 72 82 Q 72 73 64 73 Q 72 73 72 64 Z" fill="url(#goldGrad)"/>
-  <circle cx="72" cy="73" r="1.5" fill="#fff"/>
+  <!-- Vibrant Rounded 'C' Monogram -->
+  <path d="M 64.5 35.5 A 21 21 0 1 0 64.5 64.5" fill="none" stroke="#e11d48" stroke-width="14.2" stroke-linecap="round"/>
 </svg>
