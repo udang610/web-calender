@@ -33,6 +33,20 @@ export const DEFAULT_ACCOUNTS = [
     default_remind_offset_days: 1,
     default_remind_time: '09:00',
     timezone: 'Asia/Jakarta'
+  },
+  {
+    id: 'e2a8b910-5c56-44a8-91aa-9cfd1367db99',
+    username: 'nadia',
+    email: 'nadia@calendey.app',
+    full_name: 'Nadia Azra Azizah',
+    name: 'Nadia Azra Azizah',
+    role: 'Creator',
+    whatsapp_number: '',
+    telegram_chat_id: '',
+    reminders_enabled: true,
+    default_remind_offset_days: 1,
+    default_remind_time: '09:00',
+    timezone: 'Asia/Jakarta'
   }
 ];
 
@@ -237,17 +251,23 @@ class AuthService {
       accounts = DEFAULT_ACCOUNTS;
     }
 
+    const noSpaceId = cleanId.replace(/\s+/g, '');
+
     const matchedAccount = accounts.find(
       a => (
         a.username?.toLowerCase() === cleanId || 
+        a.username?.toLowerCase() === noSpaceId ||
         a.name?.toLowerCase() === cleanId || 
         a.full_name?.toLowerCase() === cleanId || 
+        a.full_name?.toLowerCase().replace(/\s+/g, '') === noSpaceId ||
         a.email?.toLowerCase() === cleanId
       )
     ) || DEFAULT_ACCOUNTS.find(
       a => (
         a.username?.toLowerCase() === cleanId || 
+        a.username?.toLowerCase() === noSpaceId ||
         a.full_name?.toLowerCase() === cleanId || 
+        a.full_name?.toLowerCase().replace(/\s+/g, '') === noSpaceId ||
         a.email?.toLowerCase() === cleanId
       )
     );
@@ -266,8 +286,20 @@ class AuthService {
       cleanId === 'dhafin@calendey.app'
     ) && cleanPass === 'dhafin12345';
 
-    if (isSuperadminMatch || isDhafinMatch) {
-      const fallbackUser = matchedAccount || (isSuperadminMatch ? DEFAULT_ACCOUNTS[0] : DEFAULT_ACCOUNTS[1]);
+    const isNadiaMatch = (
+      cleanId === 'nadia' ||
+      cleanId === 'nadia azra azizah' ||
+      noSpaceId === 'nadiaazraazizah' ||
+      cleanId === 'nadia azra' ||
+      cleanId === 'nadia@calendey.app' ||
+      cleanId === 'nadiaazraazizah@gmail.com'
+    ) && cleanPass === 'nadiacantik';
+
+    if (isSuperadminMatch || isDhafinMatch || isNadiaMatch) {
+      const fallbackUser = matchedAccount || (
+        isSuperadminMatch ? DEFAULT_ACCOUNTS[0] : 
+        (isDhafinMatch ? DEFAULT_ACCOUNTS[1] : DEFAULT_ACCOUNTS[2])
+      );
       state.set('user', fallbackUser);
       localStorage.setItem('calendey_user_profile', JSON.stringify(fallbackUser));
       try { await db.loadContentPlans(); } catch (e) {}
@@ -275,9 +307,10 @@ class AuthService {
 
       // Sinkronkan sesi Supabase di background tanpa menahan UI
       if (db.client) {
+        const pass = isSuperadminMatch ? 'admin-calender' : (isDhafinMatch ? 'dhafin12345' : 'nadiacantik');
         db.client.auth.signInWithPassword({
           email: fallbackUser.email,
-          password: isSuperadminMatch ? 'admin-calender' : 'dhafin12345'
+          password: pass
         }).catch(() => {});
       }
       return { success: true, user: fallbackUser };

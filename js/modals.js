@@ -614,9 +614,15 @@ class ModalManager {
           id: '1df2ed64-32c9-446f-852a-2e3d13d92adb',
           name: 'Dhafin Shabir Alfatih',
           email: 'dhafinshabir610@gmail.com',
-          whatsapp: '6281234567890',
           role: 'Admin',
           created_at: '2026-10-28'
+        },
+        {
+          id: 'e2a8b910-5c56-44a8-91aa-9cfd1367db99',
+          name: 'Nadia Azra Azizah',
+          email: 'nadia@calendey.app',
+          role: 'Creator',
+          created_at: '2026-10-29'
         }
       ];
       localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
