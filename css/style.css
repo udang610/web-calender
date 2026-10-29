@@ -676,17 +676,19 @@ body {
 }
 
 .auth-brand-text .brand-name {
-  font-size: 1.45rem;
+  font-size: 1.55rem;
   font-weight: 800;
-  color: #dc2626;
-  letter-spacing: -0.02em;
+  color: #0f172a;
+  letter-spacing: -0.025em;
 }
 
 .auth-brand-text .brand-sub {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #dc2626;
-  letter-spacing: -0.01em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #e11d48;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 2px;
 }
 
 .auth-heading {
