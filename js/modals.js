@@ -148,12 +148,12 @@ class ModalManager {
             <textarea id="modalPlanNotes" class="form-textarea" style="min-height: 60px;" placeholder="Catatan internal atau referensi visual...">${initialData.notes || ''}</textarea>
           </div>
 
-          <!-- Pengingat Multi-Channel (Telegram & WhatsApp) -->
+          <!-- Pengingat Telegram Bot Otomatis -->
           <div class="form-group" style="padding: 14px; background: var(--bg-subtle); border: 1px solid var(--surface-border); border-radius: var(--radius-md);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-              <label class="form-label" style="margin: 0; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.95rem;">
-                <i class="ph-bold ph-bell-ringing" style="color: var(--primary); font-size: 1.15rem;"></i>
-                Pengingat Jadwal Konten
+              <label class="form-label" style="margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.95rem;">
+                <i class="ph-bold ph-telegram-logo" style="color: #0088cc; font-size: 1.25rem;"></i>
+                Pengingat Telegram Bot
               </label>
               <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 700;">
                 <input type="checkbox" id="modalPlanRemindEnabled" ${initialData.reminder_enabled !== false ? 'checked' : ''}>
@@ -162,51 +162,33 @@ class ModalManager {
             </div>
 
             <!-- Target Pemilik / Akun Kreator -->
-            <div style="font-size: 0.72rem; padding: 6px 10px; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--surface-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+            <div style="font-size: 0.74rem; padding: 7px 12px; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--surface-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
               <span style="color: var(--text-muted);"><i class="ph-bold ph-user"></i> Target Kreator: <strong style="color: var(--text);">${creatorName}</strong></span>
-              <div style="display: flex; gap: 6px; align-items: center;">
-                <span style="color: ${tgChatId ? '#0088cc' : 'var(--text-subtle)'}; font-weight: 600;">
-                  <i class="ph-bold ph-telegram-logo"></i> ${tgChatId ? `TG: ${tgChatId}` : 'TG: -'}
-                </span>
-                <span style="color: var(--border-light);">|</span>
-                <span style="color: ${waNumber ? '#16a34a' : 'var(--text-subtle)'}; font-weight: 600;">
-                  <i class="ph-bold ph-whatsapp-logo"></i> ${waNumber ? `WA: +${waNumber}` : 'WA: -'}
-                </span>
-              </div>
+              <span style="color: ${tgChatId ? '#0088cc' : 'var(--text-subtle)'}; font-weight: 700;">
+                <i class="ph-bold ph-paper-plane-tilt"></i> ${tgChatId ? `Chat ID: ${tgChatId}` : 'Chat ID belum diatur'}
+              </span>
             </div>
 
-            <div id="modalReminderSettings" style="display: ${initialData.reminder_enabled !== false ? 'flex' : 'none'}; flex-direction: column; gap: 10px;">
-              <!-- Pilihan Saluran Pengiriman -->
+            <div id="modalReminderSettings" style="display: ${initialData.reminder_enabled !== false ? 'grid' : 'none'}; grid-template-columns: 1fr 1fr; gap: 10px;">
               <div>
-                <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; display: block;">Kirim Pengingat Melalui</label>
-                <select id="modalPlanRemindChannel" class="form-select" style="font-size: 0.82rem; padding: 7px 10px;">
-                  <option value="all" ${selectedChannel === 'all' ? 'selected' : ''}>🚀 Semua Saluran (Telegram & WhatsApp)</option>
-                  <option value="telegram" ${selectedChannel === 'telegram' ? 'selected' : ''}>✈️ Telegram Saja (100% Gratis & Bebas Scan QR)</option>
-                  <option value="whatsapp" ${selectedChannel === 'whatsapp' ? 'selected' : ''}>💬 WhatsApp Saja</option>
+                <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; display: block;">Waktu Pengingat</label>
+                <select id="modalPlanRemindTiming" class="form-select" style="font-size: 0.8rem; padding: 6px 10px;">
+                  <option value="0" ${initialData.remind_offset_days == 0 ? 'selected' : ''}>Hari-H (Di Hari Pelaksanaan)</option>
+                  <option value="1" ${initialData.remind_offset_days == 1 || initialData.remind_offset_days === undefined ? 'selected' : ''}>H-1 (Satu Hari Sebelum)</option>
+                  <option value="3" ${initialData.remind_offset_days == 3 ? 'selected' : ''}>H-3 (Tiga Hari Sebelum)</option>
+                  <option value="7" ${initialData.remind_offset_days == 7 ? 'selected' : ''}>H-7 (Satu Minggu Sebelum)</option>
                 </select>
               </div>
-
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div>
-                  <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; display: block;">Waktu Pengingat</label>
-                  <select id="modalPlanRemindTiming" class="form-select" style="font-size: 0.8rem; padding: 6px 10px;">
-                    <option value="0" ${initialData.remind_offset_days == 0 ? 'selected' : ''}>Hari-H (Di Hari Pelaksanaan)</option>
-                    <option value="1" ${initialData.remind_offset_days == 1 || initialData.remind_offset_days === undefined ? 'selected' : ''}>H-1 (Satu Hari Sebelum)</option>
-                    <option value="3" ${initialData.remind_offset_days == 3 ? 'selected' : ''}>H-3 (Tiga Hari Sebelum)</option>
-                    <option value="7" ${initialData.remind_offset_days == 7 ? 'selected' : ''}>H-7 (Satu Minggu Sebelum)</option>
-                  </select>
-                </div>
-                <div>
-                  <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; display: block;">Jam Kirim Pesan</label>
-                  <input type="time" id="modalPlanRemindTime" class="form-input" style="font-size: 0.8rem; padding: 6px 10px;" value="${initialData.remind_time || '09:00'}">
-                </div>
+              <div>
+                <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; display: block;">Jam Kirim Pesan</label>
+                <input type="time" id="modalPlanRemindTime" class="form-input" style="font-size: 0.8rem; padding: 6px 10px;" value="${initialData.remind_time || '09:00'}">
               </div>
             </div>
 
             ${initialData.id ? `
             <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--surface-border); display: flex; justify-content: flex-end;">
-              <button type="button" class="btn-secondary" style="font-size: 0.75rem; padding: 5px 12px; color: var(--primary); border-color: var(--primary-subtle); font-weight: 700;" onclick="window.calendeySendWhatsAppReminder('${initialData.id}')">
-                <i class="ph-bold ph-paper-plane-tilt"></i> Kirim Pesan Pengingat Sekarang
+              <button type="button" class="btn-secondary" style="font-size: 0.75rem; padding: 5px 12px; color: #0088cc; border-color: rgba(0, 136, 204, 0.4); font-weight: 700;" onclick="window.calendeySendWhatsAppReminder('${initialData.id}')">
+                <i class="ph-bold ph-paper-plane-tilt"></i> Kirim Pengingat Telegram Sekarang
               </button>
             </div>
             ` : ''}
@@ -281,7 +263,7 @@ class ModalManager {
     const remindBox = document.getElementById('modalReminderSettings');
     if (remindCheck && remindBox) {
       remindCheck.addEventListener('change', () => {
-        remindBox.style.display = remindCheck.checked ? 'flex' : 'none';
+        remindBox.style.display = remindCheck.checked ? 'grid' : 'none';
       });
     }
 
@@ -297,7 +279,6 @@ class ModalManager {
         const caption = document.getElementById('modalPlanCaption').value.trim();
         const notes = document.getElementById('modalPlanNotes').value.trim();
         const reminderEnabled = document.getElementById('modalPlanRemindEnabled')?.checked ?? true;
-        const reminderChannel = document.getElementById('modalPlanRemindChannel')?.value || 'all';
         const remindOffsetDays = parseInt(document.getElementById('modalPlanRemindTiming')?.value || '1');
         const remindTime = document.getElementById('modalPlanRemindTime')?.value || '09:00';
 
@@ -321,7 +302,7 @@ class ModalManager {
           caption,
           notes,
           reminder_enabled: reminderEnabled,
-          reminder_channel: reminderChannel,
+          reminder_channel: 'telegram',
           remind_offset_days: remindOffsetDays,
           remind_time: remindTime,
           content_assets: this.tempUploadedAssets
@@ -528,23 +509,6 @@ class ModalManager {
             </span>
           </div>
 
-          <!-- Jalur 2: WhatsApp Pengingat (Multi-Nomor Didukung) -->
-          <div class="form-group">
-            <label class="form-label">Nomor WhatsApp Pengingat (Multi-Nomor Didukung)</label>
-            <input type="text" id="settingsWhatsapp" class="form-input" style="padding-left: 14px;" placeholder="Contoh: 6281211112222, 6281233334444" value="${user.whatsapp_number || ''}">
-            <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px;">
-              Bisa diisi <strong>2 nomor atau lebih</strong> dipisahkan tanda koma. Pengingat konten akan dikirimkan ke seluruh nomor tersebut.
-            </span>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
-              <span>API Token WhatsApp Gateway (Fonnte)</span>
-              <a href="https://fonnte.com" target="_blank" rel="noopener noreferrer" style="font-size: 0.72rem; color: #25d366; text-decoration: underline;">fonnte.com</a>
-            </label>
-            <input type="password" id="settingsGatewayToken" class="form-input" style="padding-left: 14px; font-family: monospace;" value="${waGateway.getToken()}" placeholder="Token Fonnte untuk kirim otomatis WA">
-          </div>
-
           <div class="form-group">
             <label class="form-label">Pilihan Tema Tampilan</label>
             <div class="profile-theme-buttons">
@@ -607,10 +571,8 @@ class ModalManager {
 
     document.getElementById('btnSaveSettings').addEventListener('click', async () => {
       const full_name = document.getElementById('settingsFullName').value.trim();
-      const whatsapp_number = document.getElementById('settingsWhatsapp').value.trim();
       const telegram_chat_id = document.getElementById('settingsTelegramChatId')?.value.trim() || '';
       const telegramToken = document.getElementById('settingsTelegramToken')?.value.trim() || '';
-      const gatewayToken = document.getElementById('settingsGatewayToken')?.value.trim() || '';
 
       if (!full_name) {
         notify.error('Nama pengguna wajib diisi');
@@ -619,11 +581,9 @@ class ModalManager {
 
       // Simpan Tokens
       if (telegramToken) waGateway.setTelegramToken(telegramToken);
-      waGateway.setToken(gatewayToken);
 
       await auth.updateProfile({
         full_name,
-        whatsapp_number,
         telegram_chat_id
       });
 
@@ -691,14 +651,10 @@ class ModalManager {
                 <input type="email" id="adminNewEmail" class="form-input" style="padding-left: 14px;" placeholder="nadia@calendey.app" required>
               </div>
               <div class="form-group">
-                <label class="form-label">Nomor WhatsApp (Bisa multi: pisah koma)</label>
-                <input type="text" id="adminNewWA" class="form-input" style="padding-left: 14px;" placeholder="62812xxx, 62895xxx">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Telegram Chat ID (Opsional, pisah koma)</label>
+                <label class="form-label">Telegram Chat ID / Group ID</label>
                 <input type="text" id="adminNewTelegram" class="form-input" style="padding-left: 14px;" placeholder="Contoh: 123456789">
               </div>
-              <div class="form-group" style="grid-column: span 2;">
+              <div class="form-group">
                 <label class="form-label">Password</label>
                 <input type="password" id="adminNewPass" class="form-input" style="padding-left: 14px;" placeholder="Min. 8 karakter" required>
               </div>
@@ -726,7 +682,6 @@ class ModalManager {
                   <tr>
                     <th>Pengguna</th>
                     <th>Email</th>
-                    <th>WhatsApp</th>
                     <th>Telegram ID</th>
                     <th>Role</th>
                     <th style="text-align: right;">Aksi</th>
@@ -739,8 +694,7 @@ class ModalManager {
                         <strong>${acc.name || acc.full_name || acc.username}</strong>
                       </td>
                       <td style="color: var(--text-muted);">${acc.email}</td>
-                      <td><span style="font-size: 0.76rem;">${acc.whatsapp || acc.whatsapp_number ? '+' + (acc.whatsapp || acc.whatsapp_number) : '-'}</span></td>
-                      <td><span style="font-size: 0.76rem; color: #0088cc;">${acc.telegram_chat_id ? acc.telegram_chat_id : '-'}</span></td>
+                      <td><span style="font-size: 0.76rem; color: #0088cc; font-weight: 600;">${acc.telegram_chat_id ? acc.telegram_chat_id : '-'}</span></td>
                       <td><span class="admin-role-badge">${acc.role || 'Member'}</span></td>
                       <td style="text-align: right;">
                         ${idx > 0 ? `<button type="button" class="btn-secondary" style="padding: 3px 8px; font-size: 0.72rem; color: var(--danger);" onclick="window.calendeyDeleteAccount(${idx})">Hapus</button>` : '<span style="font-size: 0.7rem; color: var(--text-subtle);">Utama</span>'}
@@ -766,7 +720,6 @@ class ModalManager {
       const name = document.getElementById('adminNewName').value.trim();
       const email = document.getElementById('adminNewEmail').value.trim();
       const pass = document.getElementById('adminNewPass').value.trim();
-      const wa = document.getElementById('adminNewWA').value.trim();
       const telegram = document.getElementById('adminNewTelegram')?.value.trim() || '';
       const role = document.getElementById('adminNewRole').value;
 
@@ -792,7 +745,7 @@ class ModalManager {
           await db.client.auth.signUp({
             email: email.toLowerCase(),
             password: pass,
-            options: { data: { full_name: name, whatsapp_number: wa, telegram_chat_id: telegram } }
+            options: { data: { full_name: name, telegram_chat_id: telegram } }
           });
         } catch (e) {
           console.warn('[Admin] Cloud sync note:', e);
@@ -819,8 +772,6 @@ class ModalManager {
         full_name: name,
         email: email.toLowerCase(),
         password: pass,
-        whatsapp: wa,
-        whatsapp_number: wa,
         telegram_chat_id: telegram,
         role: role,
         created_at: new Date().toISOString().split('T')[0]
@@ -1002,60 +953,40 @@ class ModalManager {
     if (!this.modalOverlay) this.init();
 
     const owner = waGateway.getPlanOwner(plan);
-    const phones = waGateway.parsePhones(owner.whatsapp_number || owner.whatsapp);
     const tgChatIds = waGateway.parseTelegramChatIds(owner.telegram_chat_id);
     const hasTgToken = waGateway.hasTelegramToken();
-    const hasWaToken = waGateway.hasToken();
     const timeStr = plan.remind_time || '15:00';
     const creatorName = owner.full_name || owner.name || 'Creator';
-
-    const hasAnyAutoChannel = (hasTgToken && tgChatIds.length > 0) || (hasWaToken && phones.length > 0);
-
-    let channelBadges = '';
-    if (tgChatIds.length > 0) {
-      channelBadges += `<span style="font-size: 0.72rem; padding: 4px 10px; border-radius: 999px; background: rgba(0, 136, 204, 0.12); color: #0088cc; font-weight: 600;"><i class="ph-bold ph-telegram-logo"></i> Telegram (${tgChatIds.length} Tujuan)</span> `;
-    }
-    if (phones.length > 0) {
-      channelBadges += `<span style="font-size: 0.72rem; padding: 4px 10px; border-radius: 999px; background: rgba(37, 211, 102, 0.12); color: #16a34a; font-weight: 600;"><i class="ph-bold ph-whatsapp-logo"></i> WhatsApp (${phones.length} Nomor)</span>`;
-    }
-    if (!channelBadges) {
-      channelBadges = `<span style="font-size: 0.72rem; padding: 4px 10px; border-radius: 999px; background: rgba(239, 68, 68, 0.1); color: #dc2626;">Belum ada kontak tujuan</span>`;
-    }
+    const hasTelegram = hasTgToken && tgChatIds.length > 0;
 
     this.modalOverlay.innerHTML = `
-      <div class="modal-card" style="max-width: 480px; text-align: center; padding: 28px 24px;">
-        <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, rgba(0, 136, 204, 0.15) 0%, rgba(37, 211, 102, 0.15) 100%); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 2.2rem;">
-          <i class="ph-bold ph-bell-ringing" style="color: var(--primary);"></i>
+      <div class="modal-card" style="max-width: 460px; text-align: center; padding: 28px 24px;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(0, 136, 204, 0.12); color: #0088cc; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 2.2rem;">
+          <i class="ph-bold ph-telegram-logo"></i>
         </div>
-        <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Waktunya Posting Konten!</div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #0088cc; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Waktunya Posting Konten!</div>
         <h3 style="font-size: 1.22rem; font-weight: 800; color: var(--text); margin-bottom: 6px;">${plan.title}</h3>
         <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
           Jadwal pengingat jam <strong>${timeStr} WIB</strong> untuk kreator <strong>${creatorName}</strong>.
         </p>
 
-        <div style="display: flex; justify-content: center; gap: 6px; margin-bottom: 18px; flex-wrap: wrap;">
-          ${channelBadges}
+        <div style="display: flex; justify-content: center; gap: 6px; margin-bottom: 18px;">
+          <span style="font-size: 0.74rem; padding: 4px 12px; border-radius: 999px; background: rgba(0, 136, 204, 0.12); color: #0088cc; font-weight: 700;">
+            <i class="ph-bold ph-paper-plane-tilt"></i> Telegram: ${tgChatIds.length ? tgChatIds.join(', ') : 'Belum diatur'}
+          </span>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          ${hasAnyAutoChannel ? `
-            <button type="button" class="btn-primary" id="btnAlertAutoSendAll" style="background: linear-gradient(135deg, #0088cc 0%, #25d366 100%); border: none; justify-content: center; padding: 12px; font-weight: 700;">
-              <i class="ph-bold ph-paper-plane-tilt"></i> Kirim Otomatis (Telegram & WhatsApp)
+          ${hasTelegram ? `
+            <button type="button" class="btn-primary" id="btnAlertAutoSendAll" style="background: #0088cc; border: none; justify-content: center; padding: 12px; font-weight: 700;">
+              <i class="ph-bold ph-paper-plane-tilt"></i> Kirim Pengingat ke Telegram Sekarang
             </button>
           ` : `
-            <button type="button" class="btn-primary" id="btnAlertOpenWA" style="background: #25d366; border-color: #25d366; justify-content: center; padding: 12px; font-weight: 700;">
-              <i class="ph-bold ph-whatsapp-logo"></i> Buka WhatsApp Manual
-            </button>
+            <p style="font-size: 0.78rem; color: var(--danger); margin: 0;">Telegram Chat ID atau Bot Token belum diatur di Pengaturan.</p>
           `}
 
-          ${phones.length > 0 ? `
-            <button type="button" class="btn-secondary" id="btnAlertOpenWA" style="justify-content: center; padding: 10px; font-size: 0.82rem;">
-              <i class="ph-bold ph-arrow-square-out"></i> Buka WhatsApp Web / App Manual
-            </button>
-          ` : ''}
-
           <button type="button" class="btn-secondary" onclick="window.calendeyCloseModal()" style="justify-content: center; padding: 10px;">
-            Nanti Saja
+            Tutup / Nanti Saja
           </button>
         </div>
       </div>
@@ -1067,24 +998,16 @@ class ModalManager {
     if (autoBtn) {
       autoBtn.addEventListener('click', async () => {
         autoBtn.disabled = true;
-        autoBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Mengirim Pengingat...';
+        autoBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> Mengirim Telegram...';
         const res = await waGateway.dispatchPlanReminder(plan, owner);
         if (res.success) {
-          notify.success(`Pengingat berhasil dikirim untuk kreator ${creatorName}!`);
+          notify.success(`Pengingat Telegram berhasil dikirim untuk ${creatorName}!`);
           this.close();
         } else {
-          notify.error(`Gagal mengirim otomatis: ${res.error || 'Periksa token atau koneksi'}`);
+          notify.error(`Gagal mengirim Telegram: ${res.error || 'Periksa token atau Chat ID'}`);
           autoBtn.disabled = false;
           autoBtn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> Coba Kirim Ulang';
         }
-      });
-    }
-
-    const waBtn = document.getElementById('btnAlertOpenWA');
-    if (waBtn) {
-      waBtn.addEventListener('click', () => {
-        this.close();
-        window.calendeySendWhatsAppReminder(plan.id, false);
       });
     }
   }
@@ -1203,7 +1126,7 @@ window.calendeyDeletePlan = async (planId) => {
   }
 };
 
-window.calendeySendWhatsAppReminder = async (planId, tryAuto = true) => {
+window.calendeySendTelegramReminder = async (planId) => {
   const plans = state.get('contentPlans') || [];
   const plan = plans.find(p => p.id === planId);
   if (!plan) {
@@ -1212,52 +1135,24 @@ window.calendeySendWhatsAppReminder = async (planId, tryAuto = true) => {
   }
 
   const owner = waGateway.getPlanOwner(plan);
-  const phones = waGateway.parsePhones(owner.whatsapp_number || owner.whatsapp);
-  const primaryPhone = phones[0] || '6281219958750';
+  const creatorName = owner.full_name || owner.name || 'Creator';
 
-  // Jika coba pengiriman otomatis dan ada gateway aktif (Telegram / WhatsApp)
-  if (tryAuto && (waGateway.hasTelegramToken() || (waGateway.hasToken() && waGateway.isAutoSendEnabled()))) {
-    notify.info(`Mengirim pengingat otomatis untuk ${owner.full_name || owner.name || 'Creator'}...`);
-    const res = await waGateway.dispatchPlanReminder(plan, owner);
-    if (res.success) {
-      notify.success(`Pengingat otomatis telah terkirim untuk ${owner.full_name || owner.name || 'Creator'}!`);
-      return;
-    }
+  if (!waGateway.hasTelegramToken()) {
+    notify.error('Token Bot Telegram belum diatur di Pengaturan.');
+    return;
   }
 
-  const message = waGateway.formatReminderMessage(plan, owner);
-  const waUrl = `https://api.whatsapp.com/send/?phone=${primaryPhone}&text=${encodeURIComponent(message)}&type=phone_number&app_absent=0`;
-  window.open(waUrl, '_blank');
-  notify.success(`Membuka WhatsApp untuk mengirim pengingat ke +${primaryPhone}`);
+  notify.info(`Mengirim pengingat Telegram untuk ${creatorName}...`);
+  const res = await waGateway.dispatchPlanReminder(plan, owner);
+  if (res.success) {
+    notify.success(`Pengingat Telegram berhasil dikirim untuk ${creatorName}!`);
+  } else {
+    notify.error(`Gagal mengirim Telegram: ${res.error || 'Periksa token atau Chat ID'}`);
+  }
 };
 
-window.calendeyTestWhatsAppNotification = async (phone) => {
-  const user = state.get('user') || {};
-  let targetPhone = waGateway.normalizePhone(phone || user.whatsapp_number || '6281219958750');
-
-  // Jika token tersedia, tes kirim otomatis langsung ke HP
-  if (waGateway.hasToken()) {
-    notify.info('Mengirim pesan tes otomatis ke nomor HP...');
-    const res = await waGateway.sendTestMessage(targetPhone);
-    if (res.success) {
-      notify.success(`Pesan tes otomatis berhasil dikirim ke WhatsApp HP +${targetPhone}!`);
-      return;
-    } else {
-      notify.error(`Gagal mengirim otomatis: ${res.error || 'Periksa token'}. Mengalihkan ke link WhatsApp manual.`);
-    }
-  }
-
-  const message =
-    `Halo ${user.full_name || 'Pengguna Calendey'}! 👋🇮🇩\n\n` +
-    `Ini adalah pesan verifikasi integrasi *Reminder Langsung WhatsApp* dari aplikasi Calendey.\n\n` +
-    `✅ *Status Integrasi:* AKTIF & TERKONEKSI (Direct API)\n` +
-    `📱 *Nomor Tujuan:* +${targetPhone}\n` +
-    `⏰ *Waktu Verifikasi:* ${new Date().toLocaleString('id-ID')} WIB\n\n` +
-    `Notifikasi jadwal konten media sosial Anda akan dikirimkan langsung ke nomor ini.\n\n` +
-    `Salam,\n*Tim Calendey Indonesia*`;
-
-  const testWaUrl = `https://api.whatsapp.com/send/?phone=${targetPhone}&text=${encodeURIComponent(message)}&type=phone_number&app_absent=0`;
-  window.open(testWaUrl, '_blank');
-  notify.success(`Membuka WhatsApp untuk verifikasi pengingat ke +${targetPhone}`);
+window.calendeySendWhatsAppReminder = window.calendeySendTelegramReminder;
+window.calendeyTestWhatsAppNotification = (phone) => {
+  notify.info('Pengingat kini dialihkan 100% ke Telegram Bot API yang gratis & tanpa scan QR.');
 };
 

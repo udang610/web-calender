@@ -400,11 +400,23 @@ class ReminderGatewayService {
     const allowTelegram = chosenChannel === 'all' || chosenChannel === 'telegram';
     const allowWhatsApp = chosenChannel === 'all' || chosenChannel === 'whatsapp';
 
-    // 2. Jalur A: Telegram Bot Dispatch (Multi-Chat ID)
+    // 2. Jalur Utama: Telegram Bot Dispatch (Multi-Chat ID)
     const tgChatIds = this.parseTelegramChatIds(owner.telegram_chat_id);
     const hasTgBot = this.hasTelegramToken();
 
-    if (allowTelegram && hasTgBot && tgChatIds.length > 0) {
+    if (!hasTgBot) {
+      dispatchedResults.push({
+        channel: 'telegram',
+        success: false,
+        error: 'Token Bot Telegram belum diatur di Pengaturan.'
+      });
+    } else if (tgChatIds.length === 0) {
+      dispatchedResults.push({
+        channel: 'telegram',
+        success: false,
+        error: `Telegram Chat ID untuk kreator "${owner.full_name || 'Creator'}" belum diisi di profil.`
+      });
+    } else {
       const tgMessage = this.formatTelegramMessage(plan, owner);
       for (const chatId of tgChatIds) {
         console.log(`[Calendey Dispatch] Mengirim pengingat Telegram untuk "${plan.title}" ke ID: ${chatId}...`);
@@ -415,28 +427,6 @@ class ReminderGatewayService {
         dispatchedResults.push({
           channel: 'telegram',
           target: chatId,
-          success: res.success,
-          error: res.error
-        });
-        if (res.success) atLeastOneSuccess = true;
-      }
-    }
-
-    // 3. Jalur B: WhatsApp Gateway Dispatch (Multi-Nomor HP)
-    const waNumbers = this.parsePhones(owner.whatsapp_number || owner.whatsapp);
-    const hasWaToken = this.hasToken();
-
-    if (allowWhatsApp && hasWaToken && waNumbers.length > 0 && this.isAutoSendEnabled()) {
-      const waMessage = this.formatReminderMessage(plan, owner);
-      for (const phone of waNumbers) {
-        console.log(`[Calendey Dispatch] Mengirim pengingat WhatsApp untuk "${plan.title}" ke +${phone}...`);
-        const res = await this.sendDirectMessage({
-          target: phone,
-          message: waMessage
-        });
-        dispatchedResults.push({
-          channel: 'whatsapp',
-          target: phone,
           success: res.success,
           error: res.error
         });

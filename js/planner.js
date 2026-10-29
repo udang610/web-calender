@@ -122,11 +122,11 @@ class PlannerViewEngine {
                   }).join('')}
                 </div>
 
-                <!-- WhatsApp Reminder Indicator -->
+                <!-- Telegram Reminder Indicator -->
                 ${plan.reminder_enabled !== false ? `
-                  <div style="display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: #15803d; background: rgba(34, 197, 94, 0.12); padding: 3px 8px; border-radius: 6px; font-weight: 600; width: fit-content; margin-bottom: 8px;">
-                    <i class="ph-bold ph-whatsapp-logo" style="color: #22c55e;"></i>
-                    <span>Pengingat WA: H-${plan.remind_offset_days ?? 1} (${plan.remind_time || '09:00'})</span>
+                  <div style="display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: #0088cc; background: rgba(0, 136, 204, 0.12); padding: 3px 8px; border-radius: 6px; font-weight: 600; width: fit-content; margin-bottom: 8px;">
+                    <i class="ph-bold ph-telegram-logo" style="color: #0088cc;"></i>
+                    <span>Pengingat Telegram: H-${plan.remind_offset_days ?? 1} (${plan.remind_time || '09:00'})</span>
                   </div>
                 ` : ''}
 
@@ -157,8 +157,8 @@ class PlannerViewEngine {
 
                 <!-- Footer Actions -->
                 <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border-light);">
-                  <button class="btn-secondary" style="padding: 5px 10px; font-size: 0.78rem; color: #16a34a; border-color: rgba(34, 197, 94, 0.35);" title="Kirim Pengingat WhatsApp Sekarang" onclick="window.calendeySendWhatsAppReminder('${plan.id}')">
-                    <i class="ph-bold ph-whatsapp-logo"></i> Kirim WA
+                  <button class="btn-secondary" style="padding: 5px 10px; font-size: 0.78rem; color: #0088cc; border-color: rgba(0, 136, 204, 0.35);" title="Kirim Pengingat Telegram Sekarang" onclick="window.calendeySendWhatsAppReminder('${plan.id}')">
+                    <i class="ph-bold ph-telegram-logo"></i> Kirim Telegram
                   </button>
                   <button class="btn-secondary" style="padding: 5px 12px; font-size: 0.78rem;" onclick="window.calendeyOpenPlanDetail('${plan.id}')">
                     <i class="ph-bold ph-note-pencil"></i> Edit & Detail
