@@ -39,19 +39,38 @@
         <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">Platform Kalender & Manajemen Konten Indonesia</p>
       </div>
 
-      <!-- Form Login Sederhana (Tanpa Tab & Tanpa Masuk Cepat) -->
-      <form id="authScreenLoginForm" style="display: flex; flex-direction: column; gap: 14px;">
+      <!-- Form Login Sederhana (Dengan Proteksi Reload & Tombol Akun Cepat) -->
+      <form id="authScreenLoginForm" action="javascript:void(0);" onsubmit="return false;" style="display: flex; flex-direction: column; gap: 14px;">
         <div class="form-group">
-          <label class="form-label">Username</label>
-          <input type="text" id="authScreenLoginEmail" class="form-input" style="padding-left: 14px;" placeholder="Masukkan username" required autocomplete="username">
+          <label class="form-label">Username atau Email</label>
+          <input type="text" id="authScreenLoginEmail" class="form-input" style="padding-left: 14px;" placeholder="Username (contoh: Superadmin / dhafin)" required autocomplete="username">
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
           <input type="password" id="authScreenLoginPass" class="form-input" style="padding-left: 14px;" placeholder="Masukkan password" required autocomplete="current-password">
         </div>
-        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; padding: 11px; margin-top: 4px;">
+        <button type="submit" id="authScreenSubmitBtn" class="btn-primary" style="width: 100%; justify-content: center; padding: 11px; margin-top: 4px;">
           <i class="ph-bold ph-sign-in"></i> Masuk Sekarang
         </button>
+
+        <!-- Pilihan Masuk Cepat (1-Klik Tanpa Ketik) -->
+        <div style="margin-top: 6px; padding-top: 14px; border-top: 1px dashed var(--surface-border); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Masuk Cepat 1-Klik:</span>
+            <span style="font-size: 0.70rem; color: var(--text-subtle);">Pilih akun</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button type="button" id="quickLoginAdminBtn" class="btn-secondary" style="padding: 7px 10px; font-size: 0.78rem; justify-content: center; border-radius: 8px; font-weight: 600;">
+              <i class="ph-bold ph-shield-check" style="color: var(--primary);"></i> Superadmin
+            </button>
+            <button type="button" id="quickLoginDhafinBtn" class="btn-secondary" style="padding: 7px 10px; font-size: 0.78rem; justify-content: center; border-radius: 8px; font-weight: 600;">
+              <i class="ph-bold ph-user" style="color: #3b82f6;"></i> Dhafin
+            </button>
+          </div>
+          <p style="font-size: 0.68rem; color: var(--text-muted); text-align: center; margin-top: 2px;">
+            Password default: <code>admin-calender</code> atau <code>dhafin12345</code>
+          </p>
+        </div>
       </form>
     </div>
   </div>

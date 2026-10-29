@@ -25,28 +25,32 @@ class CalendeyApp {
     window.calendeySyncThemeButtons = (theme) => this.syncThemeButtons(theme);
     this.syncThemeButtons(savedTheme);
 
-    // 2. Inisialisasi Service Worker (PWA)
+    // 2. Setup Global DOM Event Listeners SEGERA (agar form submit & tombol langsung aktif tanpa menunggu DB)
+    this.bindEvents();
+
+    // 3. Sinkronisasi User UI & State Awal
+    this.updateUserUI();
+
+    // 4. Inisialisasi Service Worker (PWA)
     this.registerServiceWorker();
 
-    // 3. Inisialisasi Core Services
+    // 5. Inisialisasi Core Services
     modals.init();
     calendar.init();
     planner.init();
     viewManager.init();
 
-    // 4. Inisialisasi Kredensial Runtime Aman & Database
-    await loadRuntimeConfig();
-    await db.init();
-    auth.setupSessionListener();
-
-    // 5. Setup Global DOM Event Listeners
-    this.bindEvents();
-
-    // 6. Sinkronisasi Badge & User Profile
-    this.updateUserUI();
-
-    // 7. Initial View Render
+    // 6. Initial View Render
     viewManager.switchView('calendar');
+
+    // 7. Inisialisasi Kredensial Runtime Aman & Database Latar Belakang
+    try {
+      await loadRuntimeConfig();
+      await db.init();
+      auth.setupSessionListener();
+    } catch (dbErr) {
+      console.warn('[Calendey] DB init notice:', dbErr);
+    }
 
     // 8. In-App Realtime Reminder Watcher
     this.initReminderChecker();
@@ -195,11 +199,11 @@ class CalendeyApp {
   }
 
   bindEvents() {
-    // 0. Auth Screen Handlers (Login Sederhana Tanpa Tab & Tanpa Masuk Cepat)
+    // 0. Auth Screen Handlers (Form Login & Tombol Masuk Cepat)
     const formLogin = document.getElementById('authScreenLoginForm');
     if (formLogin) {
       formLogin.addEventListener('submit', async (e) => {
-        e.preventDefault();
+        if (e && e.preventDefault) e.preventDefault();
         const identifier = document.getElementById('authScreenLoginEmail')?.value.trim();
         const pass = document.getElementById('authScreenLoginPass')?.value.trim();
         const submitBtn = formLogin.querySelector('button[type="submit"]');
@@ -208,12 +212,66 @@ class CalendeyApp {
           submitBtn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Memproses...';
         }
 
-        const res = await auth.signIn(identifier, pass);
-
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<i class="ph-bold ph-sign-in"></i> Masuk Sekarang';
+        try {
+          const res = await auth.signIn(identifier, pass);
+          if (res && res.success) {
+            this.updateUserUI();
+            viewManager.switchView('calendar');
+          }
+        } catch (err) {
+          console.error('[Calendey Login Error]:', err);
+          notify.error('Terjadi kesalahan saat masuk: ' + (err.message || 'Silakan coba lagi'));
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="ph-bold ph-sign-in"></i> Masuk Sekarang';
+          }
         }
+      });
+    }
+
+    // Tombol Masuk Cepat 1-Klik: Superadmin
+    const quickAdminBtn = document.getElementById('quickLoginAdminBtn');
+    if (quickAdminBtn) {
+      quickAdminBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const emailInput = document.getElementById('authScreenLoginEmail');
+        const passInput = document.getElementById('authScreenLoginPass');
+        if (emailInput) emailInput.value = 'Superadmin';
+        if (passInput) passInput.value = 'admin-calender';
+
+        quickAdminBtn.disabled = true;
+        quickAdminBtn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Memuat...';
+
+        const res = await auth.signIn('Superadmin', 'admin-calender');
+
+        quickAdminBtn.disabled = false;
+        quickAdminBtn.innerHTML = '<i class="ph-bold ph-shield-check" style="color: var(--primary);"></i> Superadmin';
+
+        if (res && res.success) {
+          this.updateUserUI();
+          viewManager.switchView('calendar');
+        }
+      });
+    }
+
+    // Tombol Masuk Cepat 1-Klik: Dhafin
+    const quickDhafinBtn = document.getElementById('quickLoginDhafinBtn');
+    if (quickDhafinBtn) {
+      quickDhafinBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const emailInput = document.getElementById('authScreenLoginEmail');
+        const passInput = document.getElementById('authScreenLoginPass');
+        if (emailInput) emailInput.value = 'dhafin';
+        if (passInput) passInput.value = 'dhafin12345';
+
+        quickDhafinBtn.disabled = true;
+        quickDhafinBtn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Memuat...';
+
+        const res = await auth.signIn('dhafin', 'dhafin12345');
+
+        quickDhafinBtn.disabled = false;
+        quickDhafinBtn.innerHTML = '<i class="ph-bold ph-user" style="color: #3b82f6;"></i> Dhafin';
 
         if (res && res.success) {
           this.updateUserUI();
@@ -334,8 +392,15 @@ class CalendeyApp {
   }
 }
 
-// Bootstrap saat DOM siap
-document.addEventListener('DOMContentLoaded', () => {
+// Bootstrap saat DOM siap atau langsung jika dokumen sudah siap
+function bootstrapCalendeyApp() {
   const app = new CalendeyApp();
+  window.calendeyApp = app;
   app.init();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrapCalendeyApp);
+} else {
+  bootstrapCalendeyApp();
+}
