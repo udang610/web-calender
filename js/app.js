@@ -171,22 +171,23 @@ class CalendeyApp {
           if (!sessionStorage.getItem(notifiedKey)) {
             sessionStorage.setItem(notifiedKey, 'true');
 
-            // Cek apakah fitur kirim otomatis via WhatsApp Gateway aktif & memiliki token
-            if (waGateway.isAutoSendEnabled() && waGateway.hasToken()) {
-              console.log(`[Calendey Auto] Mengirim pengingat otomatis untuk "${plan.title}" ke HP...`);
+            // Cek apakah ada gateway aktif (Telegram Bot atau WhatsApp Gateway)
+            const hasActiveGateway = waGateway.hasTelegramToken() || (waGateway.isAutoSendEnabled() && waGateway.hasToken());
+            if (hasActiveGateway) {
+              console.log(`[Calendey Auto] Mengirim pengingat otomatis untuk "${plan.title}" ke kontak tujuan...`);
               const res = await waGateway.dispatchPlanReminder(plan, user);
               if (res.success) {
-                notify.success(`Pesan pengingat otomatis "${plan.title}" telah terkirim ke WhatsApp HP Anda!`);
+                notify.success(`Pesan pengingat otomatis "${plan.title}" telah terkirim!`);
                 break;
               } else {
-                console.warn('[Calendey Auto] Dispatch gateway error:', res.error);
+                console.warn('[Calendey Auto] Dispatch notice:', res);
                 if (modals && typeof modals.openReminderAlertModal === 'function') {
                   modals.openReminderAlertModal(plan);
                 }
                 break;
               }
             } else {
-              // Jika belum memiliki token gateway, tampilkan alert modal interaktif
+              // Jika belum ada token gateway otomatis, tampilkan alert modal interaktif
               if (modals && typeof modals.openReminderAlertModal === 'function') {
                 modals.openReminderAlertModal(plan);
               }
