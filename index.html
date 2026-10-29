@@ -39,17 +39,17 @@
         <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">Platform Kalender & Manajemen Konten Indonesia</p>
       </div>
 
-      <!-- Form Login Aman (Proteksi Reload Browser) -->
-      <form id="authScreenLoginForm" action="javascript:void(0);" onsubmit="return false;" style="display: flex; flex-direction: column; gap: 14px;">
+      <!-- Form Login Aman -->
+      <form id="authScreenLoginForm" onsubmit="event.preventDefault(); window.calendeyDoLogin?.(); return false;" style="display: flex; flex-direction: column; gap: 14px;">
         <div class="form-group">
           <label class="form-label">Username atau Email</label>
-          <input type="text" id="authScreenLoginEmail" class="form-input" style="padding-left: 14px;" placeholder="Masukkan username atau email" required autocomplete="username">
+          <input type="text" id="authScreenLoginEmail" class="form-input" style="padding-left: 14px;" placeholder="Masukkan username atau email" required autocomplete="username" onkeydown="if(event.key==='Enter') window.calendeyDoLogin?.();">
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
-          <input type="password" id="authScreenLoginPass" class="form-input" style="padding-left: 14px;" placeholder="Masukkan password" required autocomplete="current-password">
+          <input type="password" id="authScreenLoginPass" class="form-input" style="padding-left: 14px;" placeholder="Masukkan password" required autocomplete="current-password" onkeydown="if(event.key==='Enter') window.calendeyDoLogin?.();">
         </div>
-        <button type="submit" id="authScreenSubmitBtn" class="btn-primary" style="width: 100%; justify-content: center; padding: 11px; margin-top: 4px;">
+        <button type="button" id="authScreenSubmitBtn" class="btn-primary" onclick="window.calendeyDoLogin?.();" style="width: 100%; justify-content: center; padding: 11px; margin-top: 4px; cursor: pointer;">
           <i class="ph-bold ph-sign-in"></i> Masuk Sekarang
         </button>
       </form>

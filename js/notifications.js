@@ -48,3 +48,4 @@ class NotificationManager {
 }
 
 export const notify = new NotificationManager();
+window.notify = notify;

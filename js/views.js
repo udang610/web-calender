@@ -360,6 +360,7 @@ class ViewManager {
 }
 
 export const viewManager = new ViewManager();
+window.viewManager = viewManager;
 
 window.calendeyOpenNewPlanForDay = (dayId) => {
   const nDay = (state.get('nationalDays') || []).find(n => n.id === dayId);

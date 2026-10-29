@@ -199,34 +199,54 @@ class CalendeyApp {
   }
 
   bindEvents() {
-    // 0. Auth Screen Handlers (Form Login & Tombol Masuk Cepat)
+    // 0. Auth Screen Handlers: Global Login Method (Klik Tombol, Enter, & Submit Form)
+    window.calendeyDoLogin = async () => {
+      const emailEl = document.getElementById('authScreenLoginEmail');
+      const passEl = document.getElementById('authScreenLoginPass');
+      const submitBtn = document.getElementById('authScreenSubmitBtn');
+      const identifier = emailEl?.value.trim();
+      const pass = passEl?.value.trim();
+
+      if (!identifier || !pass) {
+        notify.error('Username atau email dan password harus diisi');
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Memproses...';
+      }
+
+      try {
+        const res = await auth.signIn(identifier, pass);
+        if (res && res.success) {
+          this.updateUserUI();
+          viewManager.switchView('calendar');
+        }
+      } catch (err) {
+        console.error('[Calendey Login Error]:', err);
+        notify.error('Terjadi kesalahan saat masuk: ' + (err.message || 'Silakan coba lagi'));
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="ph-bold ph-sign-in"></i> Masuk Sekarang';
+        }
+      }
+    };
+
+    const submitBtn = document.getElementById('authScreenSubmitBtn');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        window.calendeyDoLogin();
+      });
+    }
+
     const formLogin = document.getElementById('authScreenLoginForm');
     if (formLogin) {
-      formLogin.addEventListener('submit', async (e) => {
+      formLogin.addEventListener('submit', (e) => {
         if (e && e.preventDefault) e.preventDefault();
-        const identifier = document.getElementById('authScreenLoginEmail')?.value.trim();
-        const pass = document.getElementById('authScreenLoginPass')?.value.trim();
-        const submitBtn = formLogin.querySelector('button[type="submit"]');
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Memproses...';
-        }
-
-        try {
-          const res = await auth.signIn(identifier, pass);
-          if (res && res.success) {
-            this.updateUserUI();
-            viewManager.switchView('calendar');
-          }
-        } catch (err) {
-          console.error('[Calendey Login Error]:', err);
-          notify.error('Terjadi kesalahan saat masuk: ' + (err.message || 'Silakan coba lagi'));
-        } finally {
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="ph-bold ph-sign-in"></i> Masuk Sekarang';
-          }
-        }
+        window.calendeyDoLogin();
       });
     }
 
