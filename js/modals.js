@@ -591,7 +591,7 @@ class ModalManager {
     });
   }
 
-  openAdminPanelModal() {
+  async openAdminPanelModal() {
     if (!this.modalOverlay) this.init();
 
     const currentUser = state.get('user');
@@ -600,10 +600,14 @@ class ModalManager {
       return;
     }
 
-    // Ambil list akun tersimpan
+    // Ambil list akun tersimpan (sinkronkan dari cloud jika terhubung)
     let accounts = [];
     try {
-      accounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
+      if (db.isCloudConnected) {
+        accounts = await db.loadCloudAccounts();
+      } else {
+        accounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
+      }
     } catch (e) {
       accounts = [];
     }
@@ -796,7 +800,11 @@ class ModalManager {
       }
 
       localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
-      notify.success(`Akun "${name}" berhasil dibuat & siap digunakan!`);
+      // Sinkronkan ke Supabase Cloud (app_accounts) agar langsung tersedia di laptop lain
+      if (db.isCloudConnected) {
+        db.saveCloudAccount(newAcc).catch(() => {});
+      }
+      notify.success(`Akun "${name}" berhasil dibuat & tersinkron ke Cloud!`);
       this.openAdminPanelModal();
     });
   }
@@ -1092,6 +1100,9 @@ window.calendeyDeleteAccount = async (idx) => {
       let accounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
       const removed = accounts.splice(idx, 1);
       localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
+      if (removed[0] && db.isCloudConnected) {
+        db.deleteCloudAccount(removed[0].id, removed[0].email).catch(() => {});
+      }
       notify.info(`Akun ${removed[0]?.name || ''} telah dihapus`);
       modals.openAdminPanelModal();
     } catch (e) { }

@@ -88,7 +88,10 @@ class AuthService {
     });
     localStorage.setItem('calendey_all_accounts', JSON.stringify(allAccounts));
 
-    // Cek cached profile sesi aktif
+    // Sinkronkan akun dari Supabase Cloud di background secara non-blocking
+    try {
+      db.loadCloudAccounts().catch(() => {});
+    } catch (e) {}
     const cachedProfile = localStorage.getItem('calendey_user_profile');
     if (cachedProfile) {
       try {
@@ -354,7 +357,45 @@ class AuthService {
       }
     }
 
-    // 4. Jika bukan akun lokal yang cocok, coba autentikasi ke Supabase Cloud
+    // 3.5 Jika belum cocok di lokal, coba sinkronkan & periksa langsung ke Supabase Cloud (app_accounts)
+    if (db.isCloudConnected) {
+      try {
+        const freshCloudAccounts = await db.loadCloudAccounts();
+        const cloudMatched = freshCloudAccounts.find(
+          a => (
+            a.username?.toLowerCase() === cleanId || 
+            a.username?.toLowerCase() === noSpaceId ||
+            a.name?.toLowerCase() === cleanId || 
+            a.full_name?.toLowerCase() === cleanId || 
+            a.full_name?.toLowerCase().replace(/\s+/g, '') === noSpaceId ||
+            a.email?.toLowerCase() === cleanId
+          )
+        );
+
+        if (cloudMatched && (!cloudMatched.password || cloudMatched.password === cleanPass)) {
+          const activeUser = {
+            id: cloudMatched.id || ('acc-' + Date.now()),
+            username: cloudMatched.username || cloudMatched.name || cleanId,
+            name: cloudMatched.name || cloudMatched.full_name || cleanId,
+            full_name: cloudMatched.full_name || cloudMatched.name || cleanId,
+            email: cloudMatched.email || `${cleanId}@calendey.app`,
+            whatsapp_number: cloudMatched.whatsapp || cloudMatched.whatsapp_number || '',
+            role: cloudMatched.role || 'Member',
+            theme: cloudMatched.theme || localStorage.getItem('calendey_theme') || 'light',
+            reminders_enabled: cloudMatched.reminders_enabled !== false,
+            default_remind_offset_days: cloudMatched.default_remind_offset_days ?? 1,
+            default_remind_time: cloudMatched.default_remind_time || '09:00'
+          };
+          state.set('user', activeUser);
+          localStorage.setItem('calendey_user_profile', JSON.stringify(activeUser));
+          try { await db.loadContentPlans(); } catch (e) {}
+          notify.success(`Selamat datang, ${activeUser.full_name}!`);
+          return { success: true, user: activeUser };
+        }
+      } catch (e) {}
+    }
+
+    // 4. Jika bukan akun lokal yang cocok, coba autentikasi ke Supabase Auth
     if (db.client) {
       const candidateEmail = cleanId.includes('@') ? cleanId : (matchedAccount?.email || `${cleanId}@calendey.app`);
       try {

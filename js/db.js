@@ -26,7 +26,8 @@ class DatabaseService {
     // 2. Load data secara instan paralel tanpa blocking UI
     await Promise.all([
       this.loadNationalDays(),
-      this.loadContentPlans()
+      this.loadContentPlans(),
+      this.loadCloudAccounts()
     ]);
   }
 
@@ -404,6 +405,121 @@ class DatabaseService {
     }
 
     await this.saveContentPlan(plan, true);
+  }
+
+  // ========================================================================
+  // CLOUD ACCOUNTS (app_accounts table in Supabase)
+  // ========================================================================
+
+  async loadCloudAccounts() {
+    if (!this.isCloudConnected || !this.client) {
+      try {
+        return JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    try {
+      const { data, error } = await this.client
+        .from('app_accounts')
+        .select('*');
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        let localAccounts = [];
+        try {
+          localAccounts = JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
+        } catch (e) {}
+
+        const mergedMap = new Map();
+        localAccounts.forEach(acc => {
+          if (acc.email) mergedMap.set(acc.email.toLowerCase(), acc);
+        });
+
+        data.forEach(cloudAcc => {
+          const emailKey = (cloudAcc.email || '').toLowerCase();
+          const existing = mergedMap.get(emailKey) || {};
+          mergedMap.set(emailKey, {
+            ...existing,
+            ...cloudAcc,
+            name: cloudAcc.name || cloudAcc.full_name || existing.name,
+            full_name: cloudAcc.full_name || cloudAcc.name || existing.full_name,
+            whatsapp_number: cloudAcc.whatsapp || existing.whatsapp_number || '',
+            whatsapp: cloudAcc.whatsapp || existing.whatsapp || '',
+            password: cloudAcc.password || existing.password || ''
+          });
+        });
+
+        const mergedAccounts = Array.from(mergedMap.values());
+        localStorage.setItem('calendey_all_accounts', JSON.stringify(mergedAccounts));
+        return mergedAccounts;
+      }
+    } catch (err) {
+      console.warn('[Calendey DB] Cloud accounts sync notice:', err);
+    }
+
+    try {
+      return JSON.parse(localStorage.getItem('calendey_all_accounts') || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  async saveCloudAccount(account) {
+    if (!this.isCloudConnected || !this.client || !account) return false;
+    try {
+      const cleanUsername = (account.username || account.name || '').toLowerCase().replace(/\s+/g, '');
+      const payload = {
+        id: account.id || undefined,
+        username: cleanUsername,
+        name: account.name || account.full_name || '',
+        full_name: account.full_name || account.name || '',
+        email: (account.email || '').toLowerCase(),
+        password: account.password || '',
+        role: account.role || 'Member',
+        whatsapp: account.whatsapp || account.whatsapp_number || '',
+        telegram_chat_id: account.telegram_chat_id || '',
+        reminders_enabled: account.reminders_enabled !== false,
+        default_remind_offset_days: account.default_remind_offset_days ?? 1,
+        default_remind_time: account.default_remind_time || '09:00',
+        theme: account.theme || 'light',
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await this.client
+        .from('app_accounts')
+        .upsert(payload, { onConflict: 'email' });
+
+      if (error) {
+        console.warn('[Calendey DB] Gagal simpan akun ke Supabase:', error);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('[Calendey DB] Error saveCloudAccount:', err);
+      return false;
+    }
+  }
+
+  async deleteCloudAccount(accountId, email) {
+    if (!this.isCloudConnected || !this.client) return false;
+    try {
+      let query = this.client.from('app_accounts').delete();
+      if (email) {
+        query = query.eq('email', email.toLowerCase());
+      } else if (accountId) {
+        query = query.eq('id', accountId);
+      }
+      const { error } = await query;
+      if (error) {
+        console.warn('[Calendey DB] Gagal hapus akun di Supabase:', error);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('[Calendey DB] Error deleteCloudAccount:', err);
+      return false;
+    }
   }
 }
 
