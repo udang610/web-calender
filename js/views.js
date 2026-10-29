@@ -179,8 +179,8 @@ class ViewManager {
                 <span style="color: #0088cc; font-size: 0.74rem; font-weight: 600;"><i class="ph-bold ph-telegram-logo"></i> Telegram (Bebas Scan)</span>
               </label>
               <input type="text" id="pageSettingsTelegramChatId" class="form-input" style="padding-left: 14px;" value="${user.telegram_chat_id || ''}" placeholder="Contoh: 123456789, 987654321">
-              <span style="font-size: 0.74rem; color: var(--text-muted); margin-top: 3px;">
-                Chat ID akun Telegram Anda. Untuk multi-tujuan, pisahkan dengan koma (,). Dapatkan ID dari bot <code>@userinfobot</code> di Telegram.
+              <span style="font-size: 0.74rem; color: #0088cc; margin-top: 3px;">
+                <strong>Chat ID Telegram BUKAN nomor HP!</strong> Tiap akun Telegram memiliki Chat ID unik. Buka bot <code>@userinfobot</code> di Telegram HP masing-masing untuk melihat Chat ID. Bisa juga diisi ID Grup Telegram (cth: <code>-100xxxxxxxxx</code>).
               </span>
             </div>
 

@@ -42,16 +42,20 @@ class ModalManager {
     }
     this.tempUploadedAssets = [];
   }
-
   openContentForm(initialData = {}) {
     if (!this.modalOverlay) this.init();
-
     const isEdit = Boolean(initialData.id);
     const nationalDays = state.get('nationalDays') || [];
     this.tempUploadedAssets = initialData.content_assets ? [...initialData.content_assets] : [];
     this.selectedPlatforms = initialData.platforms && initialData.platforms.length > 0 
       ? [...initialData.platforms] 
       : ['instagram'];
+
+    const owner = waGateway.getPlanOwner(initialData);
+    const creatorName = owner.full_name || owner.name || 'Anda';
+    const tgChatId = owner.telegram_chat_id || '';
+    const waNumber = owner.whatsapp_number || owner.whatsapp || '';
+    const selectedChannel = initialData.reminder_channel || 'all';
 
     const modalHtml = `
       <div class="modal-card">
@@ -144,37 +148,65 @@ class ModalManager {
             <textarea id="modalPlanNotes" class="form-textarea" style="min-height: 60px;" placeholder="Catatan internal atau referensi visual...">${initialData.notes || ''}</textarea>
           </div>
 
-          <!-- Pengingat WhatsApp Langsung Per Rencana Konten -->
-          <div class="form-group" style="padding: 12px 14px; background: var(--bg-subtle); border: 1px solid var(--surface-border); border-radius: var(--radius-md);">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <label class="form-label" style="margin: 0; display: flex; align-items: center; gap: 6px; font-weight: 700;">
-                <i class="ph-bold ph-whatsapp-logo" style="color: #25d366; font-size: 1.15rem;"></i>
-                Pengingat WhatsApp
+          <!-- Pengingat Multi-Channel (Telegram & WhatsApp) -->
+          <div class="form-group" style="padding: 14px; background: var(--bg-subtle); border: 1px solid var(--surface-border); border-radius: var(--radius-md);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <label class="form-label" style="margin: 0; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.95rem;">
+                <i class="ph-bold ph-bell-ringing" style="color: var(--primary); font-size: 1.15rem;"></i>
+                Pengingat Jadwal Konten
               </label>
-              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600;">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 700;">
                 <input type="checkbox" id="modalPlanRemindEnabled" ${initialData.reminder_enabled !== false ? 'checked' : ''}>
                 <span>Aktifkan</span>
               </label>
             </div>
-            <div id="modalReminderSettings" style="display: ${initialData.reminder_enabled !== false ? 'grid' : 'none'}; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-              <div>
-                <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; display: block;">Waktu Pengingat</label>
-                <select id="modalPlanRemindTiming" class="form-select" style="font-size: 0.8rem; padding: 6px 10px;">
-                  <option value="1" ${initialData.remind_offset_days == 1 ? 'selected' : ''}>H-1 (Satu Hari Sebelum)</option>
-                  <option value="0" ${initialData.remind_offset_days == 0 ? 'selected' : ''}>Hari-H (Di Hari Pelaksanaan)</option>
-                  <option value="3" ${initialData.remind_offset_days == 3 ? 'selected' : ''}>H-3 (Tiga Hari Sebelum)</option>
-                  <option value="7" ${initialData.remind_offset_days == 7 ? 'selected' : ''}>H-7 (Satu Minggu Sebelum)</option>
-                </select>
-              </div>
-              <div>
-                <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; display: block;">Jam Kirim Pesan</label>
-                <input type="time" id="modalPlanRemindTime" class="form-input" style="font-size: 0.8rem; padding: 6px 10px;" value="${initialData.remind_time || '09:00'}">
+
+            <!-- Target Pemilik / Akun Kreator -->
+            <div style="font-size: 0.72rem; padding: 6px 10px; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--surface-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+              <span style="color: var(--text-muted);"><i class="ph-bold ph-user"></i> Target Kreator: <strong style="color: var(--text);">${creatorName}</strong></span>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <span style="color: ${tgChatId ? '#0088cc' : 'var(--text-subtle)'}; font-weight: 600;">
+                  <i class="ph-bold ph-telegram-logo"></i> ${tgChatId ? `TG: ${tgChatId}` : 'TG: -'}
+                </span>
+                <span style="color: var(--border-light);">|</span>
+                <span style="color: ${waNumber ? '#16a34a' : 'var(--text-subtle)'}; font-weight: 600;">
+                  <i class="ph-bold ph-whatsapp-logo"></i> ${waNumber ? `WA: +${waNumber}` : 'WA: -'}
+                </span>
               </div>
             </div>
+
+            <div id="modalReminderSettings" style="display: ${initialData.reminder_enabled !== false ? 'flex' : 'none'}; flex-direction: column; gap: 10px;">
+              <!-- Pilihan Saluran Pengiriman -->
+              <div>
+                <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; display: block;">Kirim Pengingat Melalui</label>
+                <select id="modalPlanRemindChannel" class="form-select" style="font-size: 0.82rem; padding: 7px 10px;">
+                  <option value="all" ${selectedChannel === 'all' ? 'selected' : ''}>🚀 Semua Saluran (Telegram & WhatsApp)</option>
+                  <option value="telegram" ${selectedChannel === 'telegram' ? 'selected' : ''}>✈️ Telegram Saja (100% Gratis & Bebas Scan QR)</option>
+                  <option value="whatsapp" ${selectedChannel === 'whatsapp' ? 'selected' : ''}>💬 WhatsApp Saja</option>
+                </select>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                  <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; display: block;">Waktu Pengingat</label>
+                  <select id="modalPlanRemindTiming" class="form-select" style="font-size: 0.8rem; padding: 6px 10px;">
+                    <option value="0" ${initialData.remind_offset_days == 0 ? 'selected' : ''}>Hari-H (Di Hari Pelaksanaan)</option>
+                    <option value="1" ${initialData.remind_offset_days == 1 || initialData.remind_offset_days === undefined ? 'selected' : ''}>H-1 (Satu Hari Sebelum)</option>
+                    <option value="3" ${initialData.remind_offset_days == 3 ? 'selected' : ''}>H-3 (Tiga Hari Sebelum)</option>
+                    <option value="7" ${initialData.remind_offset_days == 7 ? 'selected' : ''}>H-7 (Satu Minggu Sebelum)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; display: block;">Jam Kirim Pesan</label>
+                  <input type="time" id="modalPlanRemindTime" class="form-input" style="font-size: 0.8rem; padding: 6px 10px;" value="${initialData.remind_time || '09:00'}">
+                </div>
+              </div>
+            </div>
+
             ${initialData.id ? `
             <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--surface-border); display: flex; justify-content: flex-end;">
-              <button type="button" class="btn-secondary" style="font-size: 0.75rem; padding: 4px 10px; color: #16a34a; border-color: rgba(37, 211, 102, 0.4);" onclick="window.calendeySendWhatsAppReminder('${initialData.id}')">
-                <i class="ph-bold ph-paper-plane-tilt"></i> Kirim Pesan Pengingat WA Sekarang
+              <button type="button" class="btn-secondary" style="font-size: 0.75rem; padding: 5px 12px; color: var(--primary); border-color: var(--primary-subtle); font-weight: 700;" onclick="window.calendeySendWhatsAppReminder('${initialData.id}')">
+                <i class="ph-bold ph-paper-plane-tilt"></i> Kirim Pesan Pengingat Sekarang
               </button>
             </div>
             ` : ''}
@@ -249,7 +281,7 @@ class ModalManager {
     const remindBox = document.getElementById('modalReminderSettings');
     if (remindCheck && remindBox) {
       remindCheck.addEventListener('change', () => {
-        remindBox.style.display = remindCheck.checked ? 'grid' : 'none';
+        remindBox.style.display = remindCheck.checked ? 'flex' : 'none';
       });
     }
 
@@ -265,6 +297,7 @@ class ModalManager {
         const caption = document.getElementById('modalPlanCaption').value.trim();
         const notes = document.getElementById('modalPlanNotes').value.trim();
         const reminderEnabled = document.getElementById('modalPlanRemindEnabled')?.checked ?? true;
+        const reminderChannel = document.getElementById('modalPlanRemindChannel')?.value || 'all';
         const remindOffsetDays = parseInt(document.getElementById('modalPlanRemindTiming')?.value || '1');
         const remindTime = document.getElementById('modalPlanRemindTime')?.value || '09:00';
 
@@ -288,6 +321,7 @@ class ModalManager {
           caption,
           notes,
           reminder_enabled: reminderEnabled,
+          reminder_channel: reminderChannel,
           remind_offset_days: remindOffsetDays,
           remind_time: remindTime,
           content_assets: this.tempUploadedAssets
@@ -489,8 +523,8 @@ class ModalManager {
 
             <label class="form-label" style="font-size: 0.74rem;">Telegram Bot Token</label>
             <input type="password" id="settingsTelegramToken" class="form-input" style="padding-left: 14px; font-family: monospace;" placeholder="Token Bot dari @BotFather (contoh: 7123456789:AAFnk...)" value="${waGateway.getTelegramToken()}">
-            <span style="font-size: 0.70rem; color: var(--text-muted); margin-top: 4px; display: block; line-height: 1.4;">
-              💡 <em>Tips:</em> Cari bot Anda di Telegram lalu kirim <code>/start</code> untuk mendapatkan Chat ID. Bisa diisi ID grup agar tim menerima bersamaan.
+            <span style="font-size: 0.70rem; color: #0088cc; margin-top: 4px; display: block; line-height: 1.4;">
+              💡 <em>Catatan:</em> <strong>Chat ID Telegram BUKAN nomor HP!</strong> Tiap orang punya Chat ID berbeda. Di HP masing-masing (cth: HP Nadia), buka bot <code>@userinfobot</code> di Telegram lalu masukkan Chat ID tersebut ke sini. Jika ingin Dhafin & Nadia terima barengan, buat Grup Telegram lalu masukkan ID Grup (cth: <code>-100xxxxxxxxx</code>).
             </span>
           </div>
 

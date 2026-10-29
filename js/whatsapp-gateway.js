@@ -395,11 +395,16 @@ class ReminderGatewayService {
     const dispatchedResults = [];
     let atLeastOneSuccess = false;
 
+    // Filter saluran pilihan pengingat (all / telegram / whatsapp)
+    const chosenChannel = plan.reminder_channel || 'all';
+    const allowTelegram = chosenChannel === 'all' || chosenChannel === 'telegram';
+    const allowWhatsApp = chosenChannel === 'all' || chosenChannel === 'whatsapp';
+
     // 2. Jalur A: Telegram Bot Dispatch (Multi-Chat ID)
     const tgChatIds = this.parseTelegramChatIds(owner.telegram_chat_id);
     const hasTgBot = this.hasTelegramToken();
 
-    if (hasTgBot && tgChatIds.length > 0) {
+    if (allowTelegram && hasTgBot && tgChatIds.length > 0) {
       const tgMessage = this.formatTelegramMessage(plan, owner);
       for (const chatId of tgChatIds) {
         console.log(`[Calendey Dispatch] Mengirim pengingat Telegram untuk "${plan.title}" ke ID: ${chatId}...`);
@@ -421,7 +426,7 @@ class ReminderGatewayService {
     const waNumbers = this.parsePhones(owner.whatsapp_number || owner.whatsapp);
     const hasWaToken = this.hasToken();
 
-    if (hasWaToken && waNumbers.length > 0 && this.isAutoSendEnabled()) {
+    if (allowWhatsApp && hasWaToken && waNumbers.length > 0 && this.isAutoSendEnabled()) {
       const waMessage = this.formatReminderMessage(plan, owner);
       for (const phone of waNumbers) {
         console.log(`[Calendey Dispatch] Mengirim pengingat WhatsApp untuk "${plan.title}" ke +${phone}...`);
