@@ -625,8 +625,8 @@ body {
 
 .auth-indicator.active {
   width: 46px;
-  background: #dc2626;
-  box-shadow: 0 0 10px rgba(220, 38, 38, 0.7);
+  background: var(--primary);
+  box-shadow: 0 0 10px var(--primary-glow);
 }
 
 /* Right Form Pane (~36% width on desktop) */
@@ -634,14 +634,14 @@ body {
   flex: 1;
   min-width: 380px;
   max-width: 520px;
-  background: #ffffff;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 40px 48px;
   position: relative;
-  box-shadow: -10px 0 32px rgba(0, 0, 0, 0.06);
+  box-shadow: -10px 0 32px rgba(15, 23, 42, 0.05);
   z-index: 4;
 }
 
@@ -678,14 +678,14 @@ body {
 .auth-brand-text .brand-name {
   font-size: 1.55rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text);
   letter-spacing: -0.025em;
 }
 
 .auth-brand-text .brand-sub {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #e11d48;
+  color: var(--primary);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   margin-top: 2px;
@@ -698,14 +698,14 @@ body {
 .auth-heading h2 {
   font-size: 1.65rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text);
   margin: 0 0 6px 0;
   letter-spacing: -0.02em;
 }
 
 .auth-heading p {
   font-size: 0.88rem;
-  color: #64748b;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -717,7 +717,7 @@ body {
   display: block;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
@@ -730,7 +730,7 @@ body {
 .auth-input-icon {
   position: absolute;
   left: 14px;
-  color: #94a3b8;
+  color: var(--text-subtle);
   font-size: 1.15rem;
   pointer-events: none;
   transition: color 0.2s;
@@ -740,22 +740,22 @@ body {
   width: 100%;
   padding: 12px 42px 12px 42px;
   font-size: 0.9rem;
-  color: #0f172a;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm, 8px);
   outline: none;
   transition: all 0.2s ease;
   font-family: inherit;
 }
 
 .auth-input-wrapper input:focus {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .auth-input-wrapper input:focus ~ .auth-input-icon {
-  color: #dc2626;
+  color: var(--primary);
 }
 
 .auth-eye-btn {
@@ -763,7 +763,7 @@ body {
   right: 12px;
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--text-subtle);
   padding: 6px;
   cursor: pointer;
   display: flex;
@@ -775,20 +775,20 @@ body {
 }
 
 .auth-eye-btn:hover {
-  color: #475569;
+  color: var(--text);
 }
 
 .auth-login-btn {
   width: 100%;
-  background: #dc2626;
-  color: #ffffff;
+  background: var(--primary);
+  color: var(--text-inverse, #ffffff);
   border: none;
   padding: 12px 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm, 8px);
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.26);
+  box-shadow: 0 4px 14px var(--primary-glow);
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -798,8 +798,8 @@ body {
 }
 
 .auth-login-btn:hover {
-  background: #b91c1c;
-  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
+  background: var(--primary-hover);
+  box-shadow: 0 6px 18px var(--primary-glow);
   transform: translateY(-1px);
 }
 
