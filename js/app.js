@@ -230,7 +230,7 @@ class CalendeyApp {
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.innerHTML = '<i class="ph-bold ph-sign-in"></i> Masuk Sekarang';
+          submitBtn.innerHTML = 'Log In';
         }
       }
     };
@@ -250,6 +250,88 @@ class CalendeyApp {
         window.calendeyDoLogin();
       });
     }
+
+    // Toggle Password Visibility di Login Screen
+    const togglePassBtn = document.getElementById('btnToggleAuthPass');
+    const passInput = document.getElementById('authScreenLoginPass');
+    const eyeIcon = document.getElementById('iconAuthEye');
+    if (togglePassBtn && passInput && eyeIcon) {
+      togglePassBtn.addEventListener('click', () => {
+        if (passInput.type === 'password') {
+          passInput.type = 'text';
+          eyeIcon.className = 'ph-bold ph-eye-slash';
+        } else {
+          passInput.type = 'password';
+          eyeIcon.className = 'ph-bold ph-eye';
+        }
+      });
+    }
+
+    // Hero Slideshow Controls & Data
+    const authSlidesData = [
+      {
+        title: 'Harmoni Momen & Agenda Nasional',
+        subtitle: 'Rencanakan ide kampanye, pantau momen bersejarah Indonesia, dan jadwalkan publikasi konten media sosial secara terpadu.'
+      },
+      {
+        title: 'Lestarikan Budaya & Tradisi Nusantara',
+        subtitle: 'Rayakan kekayaan warisan bangsa dengan konten tematik kreatif untuk Hari Batik, Hari Kebudayaan, dan festival daerah.'
+      },
+      {
+        title: 'Semangat Juang Pemuda & Pahlawan',
+        subtitle: 'Bangun antusiasme audiens di momen Hari Pahlawan dan Sumpah Pemuda dengan visual memukau dan pengingat otomatis.'
+      }
+    ];
+
+    let currentSlideIndex = 0;
+    const slides = document.querySelectorAll('.auth-hero-slide');
+    const indicators = document.querySelectorAll('.auth-indicator');
+    const heroTitle = document.getElementById('authHeroTitle');
+    const heroSubtitle = document.getElementById('authHeroSubtitle');
+
+    const switchAuthSlide = (index) => {
+      if (!slides || slides.length === 0) return;
+      currentSlideIndex = (index + slides.length) % slides.length;
+
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentSlideIndex);
+      });
+
+      indicators.forEach((ind, idx) => {
+        ind.classList.toggle('active', idx === currentSlideIndex);
+      });
+
+      const data = authSlidesData[currentSlideIndex];
+      if (data && heroTitle && heroSubtitle) {
+        heroTitle.style.opacity = '0';
+        heroSubtitle.style.opacity = '0';
+        heroTitle.style.transform = 'translateY(6px)';
+        heroSubtitle.style.transform = 'translateY(6px)';
+
+        setTimeout(() => {
+          heroTitle.textContent = data.title;
+          heroSubtitle.textContent = data.subtitle;
+          heroTitle.style.opacity = '1';
+          heroSubtitle.style.transform = 'translateY(0)';
+          heroSubtitle.style.opacity = '1';
+        }, 220);
+      }
+    };
+
+    indicators.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-index') || '0', 10);
+        switchAuthSlide(idx);
+      });
+    });
+
+    // Otomatis rotasi slide setiap 6 detik
+    setInterval(() => {
+      const authScreen = document.getElementById('authScreen');
+      if (authScreen && authScreen.style.display !== 'none') {
+        switchAuthSlide(currentSlideIndex + 1);
+      }
+    }, 6000);
 
     // 1. Sidebar Nav Switching
     document.querySelectorAll('.nav-item').forEach(item => {

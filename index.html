@@ -31,28 +31,122 @@
 </head>
 <body>
 
-  <!-- 1. FULLSCREEN AUTH SCREEN (Login Sederhana & Bersih) -->
+  <!-- 1. SPLIT-SCREEN AUTH SCREEN (CRM-Paketin Style with National Day Hero Slides) -->
   <div class="auth-screen" id="authScreen" style="display: flex;">
-    <div class="auth-card">
-      <div class="auth-brand-badge" style="margin-bottom: 20px;">
-        <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text); letter-spacing: -0.02em;">Calendey</h2>
-        <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">Platform Kalender & Manajemen Konten Indonesia</p>
+    <div class="auth-container">
+      
+      <!-- LEFT HERO COLUMN (~64% width on desktop) -->
+      <div class="auth-hero-pane">
+        <div class="auth-hero-slides">
+          <!-- Slide 1: Hari Kemerdekaan RI (17 Agustus) -->
+          <div class="auth-hero-slide active" data-slide="0" style="background-image: url('images/auth/slide-kemerdekaan.jpg');"></div>
+          <!-- Slide 2: Hari Batik & Warisan Budaya Nusantara -->
+          <div class="auth-hero-slide" data-slide="1" style="background-image: url('images/auth/slide-batik.jpg');"></div>
+          <!-- Slide 3: Hari Pahlawan & Sumpah Pemuda -->
+          <div class="auth-hero-slide" data-slide="2" style="background-image: url('images/auth/slide-pahlawan.jpg');"></div>
+        </div>
+
+        <!-- Hero Dark Gradient Overlay -->
+        <div class="auth-hero-overlay"></div>
+
+        <!-- Hero Content (Headline + Subtitle + Slide Indicators) -->
+        <div class="auth-hero-content">
+          <div class="auth-hero-text">
+            <h2 id="authHeroTitle" class="auth-hero-title">Harmoni Momen & Agenda Nasional</h2>
+            <p id="authHeroSubtitle" class="auth-hero-subtitle">
+              Rencanakan ide kampanye, pantau momen bersejarah Indonesia, dan jadwalkan publikasi konten media sosial secara terpadu.
+            </p>
+          </div>
+
+          <!-- Slide Pagination Indicators (3 Bars like in CRM-Paketin) -->
+          <div class="auth-slide-indicators" id="authSlideIndicators">
+            <button type="button" class="auth-indicator active" data-index="0" aria-label="Slide 1"></button>
+            <button type="button" class="auth-indicator" data-index="1" aria-label="Slide 2"></button>
+            <button type="button" class="auth-indicator" data-index="2" aria-label="Slide 3"></button>
+          </div>
+        </div>
       </div>
 
-      <!-- Form Login Aman -->
-      <form id="authScreenLoginForm" onsubmit="event.preventDefault(); window.calendeyDoLogin?.(); return false;" style="display: flex; flex-direction: column; gap: 14px;">
-        <div class="form-group">
-          <label class="form-label">Username atau Email</label>
-          <input type="text" id="authScreenLoginEmail" class="form-input" style="padding-left: 14px;" placeholder="Masukkan username atau email" required autocomplete="username" onkeydown="if(event.key==='Enter') window.calendeyDoLogin?.();">
+      <!-- RIGHT FORM COLUMN (~36% width on desktop) -->
+      <div class="auth-form-pane">
+        <div class="auth-form-inner">
+          
+          <!-- Brand Logo Header (Paketin Cargo CRM Style) -->
+          <div class="auth-brand-header">
+            <div class="auth-brand-icon">
+              <svg width="46" height="46" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 6L88 28V72L50 94L12 72V28L50 6Z" fill="#dc2626"/>
+                <path d="M50 20L78 36V64L50 80L22 64V36L50 20Z" fill="#ffffff" fill-opacity="0.16"/>
+                <path d="M50 26L72 38.5V61.5L50 74L28 61.5V38.5L50 26Z" stroke="#ffffff" stroke-width="4.5" stroke-linejoin="round"/>
+                <path d="M50 49L72 38.5M50 49L28 38.5M50 49V74" stroke="#ffffff" stroke-width="4.5" stroke-linejoin="round"/>
+                <polygon points="50,42 57,46 50,50 43,46" fill="#ffffff"/>
+              </svg>
+            </div>
+            <div class="auth-brand-text">
+              <span class="brand-name">Paketin</span>
+              <span class="brand-sub">Cargo CRM</span>
+            </div>
+          </div>
+
+          <!-- Welcome Back Heading -->
+          <div class="auth-heading">
+            <h2>Welcome Back</h2>
+            <p>Sign into your account</p>
+          </div>
+
+          <!-- Login Form -->
+          <form id="authScreenLoginForm" onsubmit="event.preventDefault(); window.calendeyDoLogin?.(); return false;">
+            <div class="auth-form-group">
+              <label for="authScreenLoginEmail">Username</label>
+              <div class="auth-input-wrapper">
+                <i class="ph-bold ph-user auth-input-icon"></i>
+                <input 
+                  type="text" 
+                  id="authScreenLoginEmail" 
+                  placeholder="Enter username" 
+                  required 
+                  autocomplete="username" 
+                  onkeydown="if(event.key==='Enter') window.calendeyDoLogin?.();"
+                >
+              </div>
+            </div>
+
+            <div class="auth-form-group">
+              <label for="authScreenLoginPass">Password</label>
+              <div class="auth-input-wrapper">
+                <i class="ph-bold ph-lock-key auth-input-icon"></i>
+                <input 
+                  type="password" 
+                  id="authScreenLoginPass" 
+                  placeholder="Enter password" 
+                  required 
+                  autocomplete="current-password" 
+                  onkeydown="if(event.key==='Enter') window.calendeyDoLogin?.();"
+                >
+                <button type="button" id="btnToggleAuthPass" class="auth-eye-btn" title="Lihat password">
+                  <i class="ph-bold ph-eye" id="iconAuthEye"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="button" id="authScreenSubmitBtn" class="auth-login-btn" onclick="window.calendeyDoLogin?.();">
+              Log In
+            </button>
+
+            <!-- Quick Demo Credentials Hint -->
+            <div class="auth-quick-hint">
+              User: <code>Superadmin</code> &bull; Pass: <code>admin-calender</code>
+            </div>
+          </form>
+
+          <!-- Footer Copyright -->
+          <div class="auth-footer">
+            &copy; 2026 Paketin Cargo. All rights reserved.
+          </div>
+
         </div>
-        <div class="form-group">
-          <label class="form-label">Password</label>
-          <input type="password" id="authScreenLoginPass" class="form-input" style="padding-left: 14px;" placeholder="Masukkan password" required autocomplete="current-password" onkeydown="if(event.key==='Enter') window.calendeyDoLogin?.();">
-        </div>
-        <button type="button" id="authScreenSubmitBtn" class="btn-primary" onclick="window.calendeyDoLogin?.();" style="width: 100%; justify-content: center; padding: 11px; margin-top: 4px; cursor: pointer;">
-          <i class="ph-bold ph-sign-in"></i> Masuk Sekarang
-        </button>
-      </form>
+      </div>
+
     </div>
   </div>
 
