@@ -237,7 +237,6 @@ class DatabaseService {
       }
 
       // Sinkronkan ke Supabase Cloud (content_plans & reminders)
-      const user = state.get('user');
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user?.id || '');
       if (this.isCloudConnected && user && isUUID) {
         try {
