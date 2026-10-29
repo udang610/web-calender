@@ -103,42 +103,90 @@ html[data-theme="dark"] {
 }
 
 html[data-theme="pink"] {
-  --bg: #fff5f7;
-  --bg-subtle: #ffeef2;
+  /* Canvas & Surfaces - Clearly & Delightfully Pink */
+  --bg: #ffe4ea;
+  --bg-subtle: #ffd1dc;
   --surface: #ffffff;
-  --surface-hover: #fff1f4;
-  --surface-active: #ffe4e9;
-  --surface-border: #ffd1dc;
-  --border-light: #ffe5ec;
+  --surface-hover: #fff0f3;
+  --surface-active: #ffe2e8;
+  --surface-border: #fca5b7;
+  --border-light: #fed4dc;
 
-  --text: #4a1d24;
-  --text-muted: #8c535d;
-  --text-subtle: #b3828c;
+  /* Typography Colors - Deep Plum & Rich Berry for Crystal Readability */
+  --text: #4c0519;
+  --text-muted: #881337;
+  --text-subtle: #be123c;
   --text-inverse: #ffffff;
 
-  --primary: #fb7185;
-  --primary-hover: #f43f5e;
+  /* Brand Accents - Vibrant Hot Pink & Deep Rose */
+  --primary: #f43f5e;
+  --primary-hover: #e11d48;
   --primary-subtle: #ffe4e9;
-  --primary-glow: rgba(251, 113, 133, 0.25);
+  --primary-glow: rgba(244, 63, 94, 0.35);
 
+  /* Functional Colors */
   --success: #10b981;
   --success-subtle: #d1fae5;
   --warning: #f59e0b;
   --warning-subtle: #fef3c7;
   --info: #0284c7;
   --info-subtle: #e0f2fe;
-  --danger: #f43f5e;
+  --danger: #e11d48;
   --danger-subtle: #ffe4e9;
 
-  --cat-nasional: #fb7185;
+  /* National Day Categories */
+  --cat-nasional: #f43f5e;
   --cat-sejarah: #f97316;
   --cat-agama: #10b981;
   --cat-juang: #3b82f6;
-  --cat-khusus: #c084fc;
+  --cat-khusus: #d946ef;
 
-  --shadow-sm: 0 1px 3px rgba(180, 50, 75, 0.06);
-  --shadow-md: 0 4px 14px -2px rgba(180, 50, 75, 0.1);
-  --shadow-lg: 0 12px 28px -4px rgba(180, 50, 75, 0.14);
-  --glass-bg: rgba(255, 255, 255, 0.9);
-  --glass-border: rgba(255, 209, 220, 0.6);
+  /* Shadows with Rosy Tint */
+  --shadow-sm: 0 1px 3px rgba(225, 29, 72, 0.08);
+  --shadow-md: 0 4px 14px -2px rgba(225, 29, 72, 0.14);
+  --shadow-lg: 0 12px 28px -4px rgba(225, 29, 72, 0.2);
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(252, 165, 183, 0.6);
+}
+
+/* Enhancements specifically for Pink Theme */
+html[data-theme="pink"] .sidebar {
+  background: #fff3f6;
+  border-right-color: #fca5b7;
+}
+
+html[data-theme="pink"] .topbar {
+  background: rgba(255, 243, 246, 0.92);
+  border-bottom-color: #fca5b7;
+}
+
+html[data-theme="pink"] .brand-info h1 {
+  color: #881337;
+}
+
+html[data-theme="pink"] .brand-info span {
+  color: #f43f5e;
+}
+
+html[data-theme="pink"] .nav-item.active {
+  background: #fce7f3;
+  color: #e11d48;
+}
+
+html[data-theme="pink"] .nav-item:hover:not(.active) {
+  background: #ffe4e9;
+  color: #881337;
+}
+
+html[data-theme="pink"] .calendar-card,
+html[data-theme="pink"] .upcoming-card,
+html[data-theme="pink"] .today-panel,
+html[data-theme="pink"] .plan-table-container {
+  border-color: #fca5b7;
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.08);
+}
+
+html[data-theme="pink"] .calendar-day.today {
+  border-color: #f43f5e;
+  background: #fff0f3;
 }
