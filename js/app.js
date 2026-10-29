@@ -230,56 +230,6 @@ class CalendeyApp {
       });
     }
 
-    // Tombol Masuk Cepat 1-Klik: Superadmin
-    const quickAdminBtn = document.getElementById('quickLoginAdminBtn');
-    if (quickAdminBtn) {
-      quickAdminBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const emailInput = document.getElementById('authScreenLoginEmail');
-        const passInput = document.getElementById('authScreenLoginPass');
-        if (emailInput) emailInput.value = 'Superadmin';
-        if (passInput) passInput.value = 'admin-calender';
-
-        quickAdminBtn.disabled = true;
-        quickAdminBtn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Memuat...';
-
-        const res = await auth.signIn('Superadmin', 'admin-calender');
-
-        quickAdminBtn.disabled = false;
-        quickAdminBtn.innerHTML = '<i class="ph-bold ph-shield-check" style="color: var(--primary);"></i> Superadmin';
-
-        if (res && res.success) {
-          this.updateUserUI();
-          viewManager.switchView('calendar');
-        }
-      });
-    }
-
-    // Tombol Masuk Cepat 1-Klik: Dhafin
-    const quickDhafinBtn = document.getElementById('quickLoginDhafinBtn');
-    if (quickDhafinBtn) {
-      quickDhafinBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const emailInput = document.getElementById('authScreenLoginEmail');
-        const passInput = document.getElementById('authScreenLoginPass');
-        if (emailInput) emailInput.value = 'dhafin';
-        if (passInput) passInput.value = 'dhafin12345';
-
-        quickDhafinBtn.disabled = true;
-        quickDhafinBtn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Memuat...';
-
-        const res = await auth.signIn('dhafin', 'dhafin12345');
-
-        quickDhafinBtn.disabled = false;
-        quickDhafinBtn.innerHTML = '<i class="ph-bold ph-user" style="color: #3b82f6;"></i> Dhafin';
-
-        if (res && res.success) {
-          this.updateUserUI();
-          viewManager.switchView('calendar');
-        }
-      });
-    }
-
     // 1. Sidebar Nav Switching
     document.querySelectorAll('.nav-item').forEach(item => {
       item.addEventListener('click', () => {

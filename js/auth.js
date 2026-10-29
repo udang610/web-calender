@@ -250,31 +250,19 @@ class AuthService {
       )
     );
 
-    // 2. CEK CEPAT: Autentikasi instan untuk akun bawaan & akun lokal (Zero Delay & Ramah Varian Password)
+    // 2. Autentikasi ketat untuk akun utama bawaan (Strict Password Verification)
     const isSuperadminMatch = (
       cleanId === 'superadmin' || 
       cleanId === 'admin' || 
       cleanId === 'superadmin@calendey.app'
-    ) && (
-      cleanPass === 'admin-calender' || 
-      cleanPass === 'admin-calendar' || 
-      cleanPass === 'admin123' || 
-      cleanPass === 'admin' || 
-      cleanPass === 'superadmin' || 
-      cleanPass === '123456'
-    );
+    ) && cleanPass === 'admin-calender';
 
     const isDhafinMatch = (
       cleanId === 'dhafin' || 
       cleanId === 'dhafinshabir' || 
       cleanId === 'dhafinshabir610@gmail.com' || 
       cleanId === 'dhafin@calendey.app'
-    ) && (
-      cleanPass === 'dhafin12345' || 
-      cleanPass === 'dhafin123' || 
-      cleanPass === 'dhafin' || 
-      cleanPass === '123456'
-    );
+    ) && cleanPass === 'dhafin12345';
 
     if (isSuperadminMatch || isDhafinMatch) {
       const fallbackUser = matchedAccount || (isSuperadminMatch ? DEFAULT_ACCOUNTS[0] : DEFAULT_ACCOUNTS[1]);
