@@ -2,7 +2,7 @@
 // CALENDEY — Service Worker (Network-First for HTML, Cache-First for static)
 // ========================================================================
 
-const CACHE_NAME = 'calendey-v1.5.0';
+const CACHE_NAME = 'calendey-v1.6.0';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -28,10 +28,28 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Network-First untuk file HTML & JS utama agar update langsung tampil tanpa stale cache
-  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+  // Jangan pernah cache request API/Database (Supabase, Telegram, Fonnte, /api/)
+  if (
+    url.hostname.includes('supabase.co') ||
+    url.hostname.includes('telegram.org') ||
+    url.hostname.includes('fonnte.com') ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.includes('/rest/v1/') ||
+    url.pathname.includes('/auth/v1/')
+  ) {
+    return;
+  }
+
+  // Network-First untuk file HTML, JSON, JS, & CSS utama agar update langsung tampil tanpa stale cache
+  if (
+    event.request.mode === 'navigate' ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.json')
+  ) {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, { cache: 'no-cache' })
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const resClone = networkResponse.clone();
@@ -44,7 +62,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first untuk fonts dan library eksternal
+  // Cache-first untuk fonts, gambar, dan library statis eksternal
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;

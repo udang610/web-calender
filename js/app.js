@@ -47,22 +47,45 @@ class CalendeyApp {
     try {
       await loadRuntimeConfig();
       await db.init();
-      auth.setupSessionListener();
+      await auth.setupSessionListener();
+      await db.loadContentPlans();
     } catch (dbErr) {
       console.warn('[Calendey] DB init notice:', dbErr);
     }
 
-    // 8. In-App Realtime Reminder Watcher
+    // 8. In-App Realtime Reminder Watcher & Multi-Device Auto Sync
     this.initReminderChecker();
+    this.initCrossDeviceSync();
 
     console.log('[Calendey] Ready!');
+  }
+
+  initCrossDeviceSync() {
+    const syncFromCloud = () => {
+      if (state.get('user') && db.isCloudConnected) {
+        db.loadContentPlans().catch(() => {});
+      }
+    };
+
+    window.addEventListener('focus', syncFromCloud);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        syncFromCloud();
+      }
+    });
+
+    // Polling ringan setiap 25 detik agar perubahan dari perangkat lain (MacBook <-> Windows) tampil otomatis
+    setInterval(syncFromCloud, 25000);
   }
 
   registerServiceWorker() {
     if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
-          .then(reg => console.log('[Calendey SW] Registered successfully:', reg.scope))
+          .then(reg => {
+            console.log('[Calendey SW] Registered successfully:', reg.scope);
+            reg.update().catch(() => {});
+          })
           .catch(err => console.log('[Calendey SW] Registration failed:', err));
       });
     }

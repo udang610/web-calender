@@ -101,7 +101,7 @@ class AuthService {
           d.email.toLowerCase() === activeUser.email?.toLowerCase()
         );
         if (matchedDef) {
-          activeUser = { ...matchedDef, ...activeUser };
+          activeUser = { ...matchedDef, ...activeUser, id: matchedDef.id };
         }
         // Pastikan tema yang disimpan di localStorage tidak pernah ter-reset ke light
         const persistentTheme = localStorage.getItem('calendey_theme') || activeUser.theme || 'light';
@@ -122,26 +122,41 @@ class AuthService {
     this.setupSessionListener();
   }
 
-  async loadUserProfile(userId, email) {
+  async loadUserProfile(userId, email = '') {
     if (!db.client) return;
     try {
+      const currentUser = state.get('user');
+      // Jangan pernah menimpa profil user aktif (misal: Nadia) jika sesi Supabase menggunakan akun bridge
+      if (
+        currentUser &&
+        currentUser.email &&
+        email &&
+        currentUser.email.toLowerCase() !== email.toLowerCase()
+      ) {
+        return;
+      }
+
       const { data, error } = await db.client
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-      const persistentTheme = localStorage.getItem('calendey_theme') || data?.theme || 'light';
+      const persistentTheme = localStorage.getItem('calendey_theme') || data?.theme || currentUser?.theme || 'light';
       state.set('theme', persistentTheme);
       document.documentElement.setAttribute('data-theme', persistentTheme);
 
       if (!error && data) {
-        const currentUser = state.get('user') || {};
+        const baseUser = currentUser || {};
         const merged = {
-          ...currentUser,
-          id: data.id,
-          full_name: data.full_name || currentUser.full_name,
-          whatsapp_number: data.whatsapp_number || currentUser.whatsapp_number,
+          ...baseUser,
+          ...data,
+          id: baseUser.id || data.id,
+          email: baseUser.email || email || data.email,
+          full_name: data.full_name || baseUser.full_name,
+          whatsapp_number: data.whatsapp_number || baseUser.whatsapp_number,
+          role: baseUser.role || 'Member',
+          username: baseUser.username || (email ? email.split('@')[0] : 'user'),
           theme: persistentTheme,
           reminders_enabled: data.reminders_enabled !== false,
           default_remind_offset_days: data.default_remind_offset_days ?? 1,
@@ -164,7 +179,12 @@ class AuthService {
     if (db.client) {
       try {
         db.client.auth.onAuthStateChange(async (event, session) => {
-          if (session?.user) {
+          const currentUser = state.get('user');
+          if (
+            session?.user &&
+            currentUser?.email &&
+            session.user.email?.toLowerCase() === currentUser.email.toLowerCase()
+          ) {
             await this.loadUserProfile(session.user.id, session.user.email);
           }
           // Catatan: Jangan hapus sesi user lokal pada event 'SIGNED_OUT' latar belakang.
@@ -180,61 +200,70 @@ class AuthService {
   async ensureAuthSession() {
     if (!db.client) return null;
     try {
+      const currentUser = state.get('user');
+      const isDhafin =
+        currentUser?.username?.toLowerCase() === 'dhafin' ||
+        currentUser?.email?.toLowerCase() === 'dhafinshabir610@gmail.com';
+
       const { data: sessData } = await db.client.auth.getSession();
       if (sessData?.session?.user) {
-        return sessData.session;
-      }
-      const currentUser = state.get('user');
-      if (currentUser?.email) {
-        const defaultPass = currentUser.username?.toLowerCase() === 'superadmin' ? 'admin-calender' : 'dhafin12345';
-        try {
-          const { data: signInData, error } = await db.client.auth.signInWithPassword({
-            email: currentUser.email,
-            password: defaultPass
-          });
-          if (!error && signInData?.session) {
-            console.log('[Calendey Auth] Sesi Supabase Cloud aktif untuk:', signInData.user.id);
-            return signInData.session;
-          }
-        } catch (authErr) {
-          // Abaikan kegagalan background auth ke Supabase, sesi lokal tetap aman
+        const sessEmail = (sessData.session.user.email || '').toLowerCase();
+        // Jika user aktif adalah Dhafin namun sesi bridge masih Superadmin, switch ke Dhafin
+        if (isDhafin && sessEmail !== 'dhafinshabir610@gmail.com') {
+          // Lanjut ke signIn Dhafin di bawah
+        } else if (!isDhafin && sessEmail === 'dhafinshabir610@gmail.com') {
+          // Jika user aktif adalah Nadia/Superadmin namun sesi masih Dhafin, switch ke sesi bridge utama
+        } else {
+          return sessData.session;
         }
       }
+
+      // 1. Jika user aktif adalah Dhafin, masuk menggunakan akun Supabase Auth Dhafin
+      if (isDhafin) {
+        try {
+          const { data: dhafinSignIn, error: dhafinErr } = await db.client.auth.signInWithPassword({
+            email: 'dhafinshabir610@gmail.com',
+            password: 'dhafin12345'
+          });
+          if (!dhafinErr && dhafinSignIn?.session) {
+            return dhafinSignIn.session;
+          }
+        } catch (e) {}
+      }
+
+      // 2. Coba login langsung dengan kredensial akun aktif jika terdaftar di auth.users
+      if (currentUser?.email && !isDhafin && currentUser.email.toLowerCase() !== 'nadia@calendey.app') {
+        const candidatePass =
+          currentUser.username?.toLowerCase() === 'superadmin'
+            ? 'admin-calender'
+            : (currentUser.password || '');
+        if (candidatePass) {
+          try {
+            const { data: directSignIn, error: directErr } = await db.client.auth.signInWithPassword({
+              email: currentUser.email,
+              password: candidatePass
+            });
+            if (!directErr && directSignIn?.session) {
+              return directSignIn.session;
+            }
+          } catch (e) {}
+        }
+      }
+
+      // 3. Fallback Cloud Bridge Session (untuk Nadia & akun app_accounts agar dapat baca/tulis tabel RLS content_plans)
+      try {
+        const { data: bridgeSignIn, error: bridgeErr } = await db.client.auth.signInWithPassword({
+          email: 'superadmin@calendey.app',
+          password: 'admin-calender'
+        });
+        if (!bridgeErr && bridgeSignIn?.session) {
+          return bridgeSignIn.session;
+        }
+      } catch (bridgeAuthErr) {}
     } catch (e) {
       console.warn('[Calendey Auth] Sesi Cloud check notice:', e);
     }
     return null;
-  }
-
-  async loadUserProfile(userId, email = '') {
-    if (!db.client) return;
-    try {
-      const { data, error } = await db.client
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (!error && data) {
-        const currentUser = state.get('user') || {};
-        const profile = { 
-          ...currentUser,
-          ...data, 
-          email: email || data.email || currentUser.email,
-          role: currentUser.role || 'Member',
-          username: currentUser.username || (email ? email.split('@')[0] : 'user')
-        };
-        state.set('user', profile);
-        localStorage.setItem('calendey_user_profile', JSON.stringify(profile));
-        if (data.theme) {
-          state.set('theme', data.theme);
-          document.documentElement.setAttribute('data-theme', data.theme);
-          window.calendeySyncThemeButtons?.(data.theme);
-        }
-      }
-    } catch (err) {
-      console.warn('[Calendey Auth] Gagal memuat profil Supabase (menggunakan cache lokal):', err);
-    }
   }
 
   async signIn(identifier, password) {
@@ -299,23 +328,28 @@ class AuthService {
     ) && cleanPass === 'nadiacantik';
 
     if (isSuperadminMatch || isDhafinMatch || isNadiaMatch) {
-      const fallbackUser = matchedAccount || (
-        isSuperadminMatch ? DEFAULT_ACCOUNTS[0] : 
-        (isDhafinMatch ? DEFAULT_ACCOUNTS[1] : DEFAULT_ACCOUNTS[2])
-      );
+      const defUser = isSuperadminMatch
+        ? DEFAULT_ACCOUNTS[0]
+        : (isDhafinMatch ? DEFAULT_ACCOUNTS[1] : DEFAULT_ACCOUNTS[2]);
+      const fallbackUser = {
+        ...(matchedAccount || {}),
+        ...defUser,
+        id: defUser.id,
+        telegram_chat_id: matchedAccount?.telegram_chat_id || defUser.telegram_chat_id || '',
+        whatsapp_number: matchedAccount?.whatsapp_number || matchedAccount?.whatsapp || defUser.whatsapp_number || ''
+      };
       state.set('user', fallbackUser);
       localStorage.setItem('calendey_user_profile', JSON.stringify(fallbackUser));
+
+      // Pastikan sesi Supabase Cloud (langsung atau bridge) aktif sebelum memuat rencana konten
+      if (db.client) {
+        try {
+          await this.ensureAuthSession();
+        } catch (e) {}
+      }
+
       try { await db.loadContentPlans(); } catch (e) {}
       notify.success(`Selamat datang, ${fallbackUser.full_name}!`);
-
-      // Sinkronkan sesi Supabase di background tanpa menahan UI
-      if (db.client) {
-        const pass = isSuperadminMatch ? 'admin-calender' : (isDhafinMatch ? 'dhafin12345' : 'nadiacantik');
-        db.client.auth.signInWithPassword({
-          email: fallbackUser.email,
-          password: pass
-        }).catch(() => {});
-      }
       return { success: true, user: fallbackUser };
     }
 
@@ -342,6 +376,7 @@ class AuthService {
           full_name: matchedAccount.full_name || matchedAccount.name || cleanId,
           email: matchedAccount.email || `${cleanId}@calendey.app`,
           whatsapp_number: matchedAccount.whatsapp_number || matchedAccount.whatsapp || '',
+          telegram_chat_id: matchedAccount.telegram_chat_id || '',
           role: matchedAccount.role || 'Member',
           theme: matchedAccount.theme || localStorage.getItem('calendey_theme') || 'light',
           reminders_enabled: matchedAccount.reminders_enabled !== false,
@@ -351,6 +386,7 @@ class AuthService {
 
         state.set('user', activeUser);
         localStorage.setItem('calendey_user_profile', JSON.stringify(activeUser));
+        try { await this.ensureAuthSession(); } catch (e) {}
         try { await db.loadContentPlans(); } catch (e) {}
         notify.success(`Selamat datang, ${activeUser.full_name}!`);
         return { success: true, user: activeUser };
@@ -380,6 +416,7 @@ class AuthService {
             full_name: cloudMatched.full_name || cloudMatched.name || cleanId,
             email: cloudMatched.email || `${cleanId}@calendey.app`,
             whatsapp_number: cloudMatched.whatsapp || cloudMatched.whatsapp_number || '',
+            telegram_chat_id: cloudMatched.telegram_chat_id || '',
             role: cloudMatched.role || 'Member',
             theme: cloudMatched.theme || localStorage.getItem('calendey_theme') || 'light',
             reminders_enabled: cloudMatched.reminders_enabled !== false,
@@ -388,6 +425,7 @@ class AuthService {
           };
           state.set('user', activeUser);
           localStorage.setItem('calendey_user_profile', JSON.stringify(activeUser));
+          try { await this.ensureAuthSession(); } catch (e) {}
           try { await db.loadContentPlans(); } catch (e) {}
           notify.success(`Selamat datang, ${activeUser.full_name}!`);
           return { success: true, user: activeUser };
@@ -550,36 +588,32 @@ class AuthService {
         localStorage.setItem('calendey_all_accounts', JSON.stringify(accounts));
       } catch (e) { }
 
-      // Simpan langsung ke Supabase Database Cloud dengan UUID valid
+      // Simpan ke tabel app_accounts (mendukung Nadia & seluruh akun multi-device) dan profiles
+      if (db.isCloudConnected) {
+        try {
+          await db.saveCloudAccount(updatedUser);
+        } catch (accErr) {
+          console.warn('[Calendey Auth] Cloud account sync warning:', accErr);
+        }
+      }
+
       if (db.client) {
         try {
-          await this.ensureAuthSession();
-          const validUUID = await this.getOrEnsureSupabaseUUID(updatedUser);
-          if (validUUID) {
-            updatedUser.id = validUUID;
-            state.set('user', updatedUser);
-            localStorage.setItem('calendey_user_profile', JSON.stringify(updatedUser));
-
+          const sess = await this.ensureAuthSession();
+          // Hanya update tabel profiles jika sesi Supabase adalah milik user ini secara langsung
+          if (
+            sess?.user?.id &&
+            sess.user.email?.toLowerCase() === (updatedUser.email || '').toLowerCase()
+          ) {
             const profilePayload = {
-              id: validUUID,
+              id: sess.user.id,
               full_name: updatedUser.full_name,
-              whatsapp_number: updatedUser.whatsapp_number,
+              whatsapp_number: updatedUser.whatsapp_number || null,
               theme: updatedUser.theme || 'light',
-              reminders_enabled: true,
+              reminders_enabled: updatedUser.reminders_enabled !== false,
               updated_at: new Date().toISOString()
             };
-
-            const { data: updatedRows, error: profErr } = await db.client
-              .from('profiles')
-              .update(profilePayload)
-              .eq('id', validUUID)
-              .select();
-
-            if (!profErr && updatedRows && updatedRows.length > 0) {
-              console.log('[Calendey Auth] Profile tersimpan ke Supabase Database:', updatedRows[0]);
-            } else {
-              await db.client.from('profiles').upsert(profilePayload);
-            }
+            await db.client.from('profiles').upsert(profilePayload);
           }
         } catch (dbErr) {
           console.warn('[Calendey Auth] Cloud sync warning:', dbErr);
